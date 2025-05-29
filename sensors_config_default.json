@@ -1,0 +1,111 @@
+{
+  "serial_ports": {
+    "/dev/ttyUSB0": {
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "description": "Analog Converter 1 (4-20mA/0-5V)"
+    },
+    "/dev/ttyUSB1": {
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "description": "Digital Converter 2 (DI/DO)"
+    },
+    "/dev/ttyUSB2": {
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "description": "Direct RS485 Sensors"
+    }
+  },
+  "mqtt": {
+    "broker": "eqmx.telemetry-adaro.id",
+    "port": 1883,
+    "base_topic": "adaro/99",
+    "command_topic": "adaro/99/command",
+    "qos": 1,
+    "client_id": "industrial_gateway"
+  },
+  "devices": [
+    {
+      "name": "Analog_Converter_1",
+      "port": "/dev/ttyUSB0",
+      "type": "analog_io",
+      "sensors": [
+        {
+          "name": "Boiler_Temp",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "channel": 0,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 500,
+            "unit": "°C"
+          }
+        },
+        {
+          "name": "Tank_Level",
+          "type": "0-5V",
+          "slave_address": 1,
+          "channel": 1,
+          "conversion": {
+            "input_min": 0,
+            "input_max": 5,
+            "output_min": 0,
+            "output_max": 100,
+            "unit": "%"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Digital_Converter_2",
+      "port": "/dev/ttyUSB1",
+      "type": "digital_io",
+      "sensors": [
+        {
+          "name": "Pump_Status",
+          "type": "digital_in",
+          "slave_address": 2,
+          "address": 0,
+          "conversion": {
+            "description": "0=Off, 1=On"
+          }
+        },
+        {
+          "name": "Valve_Control",
+          "type": "digital_out",
+          "slave_address": 2,
+          "address": 1,
+          "conversion": {
+            "description": "0=Close, 1=Open"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Direct_RS485_Sensors",
+      "port": "/dev/ttyUSB2",
+      "type": "direct_rs485",
+      "sensors": [
+        {
+          "name": "Ambient_Temp",
+          "type": "rs485",
+          "slave_address": 3,
+          "register_address": 100,
+          "conversion": {
+            "register_type": "32bit_float",
+            "scaling_factor": 1.0,
+            "unit": "°C"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+[modpoll]
+mode=rtu
+device=/dev/ttyUSB0
+baud=9600
+parity=none
+address=1
+range=40001-40006

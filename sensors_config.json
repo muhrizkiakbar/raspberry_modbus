@@ -1,0 +1,67 @@
+{
+  "serial_ports": {
+    "/dev/ttyUSB0": {
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "description": "Analog Converter 1 (4-20mA/0-5V)"
+    }
+  },
+  "mqtt": {
+    "broker": "eqmx.telemetry-adaro.id",
+    "port": 1883,
+    "base_topic": "adaro/1",
+    "command_topic": "adaro/1/command",
+    "qos": 1,
+    "client_id": "industrial_gateway"
+  },
+  "devices": [
+    {
+      "name": "Analog_Converter_1",
+      "port": "/dev/ttyUSB0",
+      "type": "analog_io",
+      "sensors": [
+        {
+          "name": "ph",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "channel": 0,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 14,
+            "unit": ""
+          }
+        },
+        {
+          "name": "tds",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "channel": 1,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 2000,
+            "unit": "ppm"
+          }
+        },
+        {
+          "name": "tss",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "channel": 2,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 3000,
+            "unit": "ppm"
+          }
+        }
+      ]
+    }
+  ]
+}

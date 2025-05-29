@@ -1,0 +1,4 @@
+pyserial
+crcmod
+paho-mqtt
+requests

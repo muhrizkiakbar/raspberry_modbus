@@ -1,0 +1,101 @@
+{
+  "system": {
+    "name": "RTU-Controller-v1",
+    "version": "1.2.0"
+  },
+  "modbus": {
+    "port": "/dev/ttyUSB0",
+    "baudrate": 9600,
+    "parity": "N",
+    "stopbits": 1,
+    "bytesize": 8,
+    "slave_id": 1,
+    "timeout": 2
+  },
+  "sensors": {
+    "analog": {
+      "AI1": {
+        "address": 0,
+        "unit": "V",
+        "description": "Temperature Sensor 0-5V",
+        "calibration": {
+          "type": "linear",
+          "parameters": {
+            "gain": 1.02,
+            "offset": -0.12
+          }
+        }
+      },
+      "AI2": {
+        "address": 1,
+        "unit": "mA",
+        "description": "Pressure Sensor 4-20mA",
+        "calibration": {
+          "type": "poly",
+          "parameters": {
+            "a": 0.001,
+            "b": 0.998,
+            "c": 0.02
+          }
+        }
+      }
+    },
+    "digital": {
+      "DI1": {
+        "address": 0,
+        "description": "Emergency Stop"
+      }
+    }
+  },
+  "alarms": {
+    "AI1": {
+      "max": 4.8,
+      "min": 0.2
+    },
+    "DI1": {
+      "trigger": 1
+    }
+  },
+  "mqtt": {
+    "enabled": true,
+    "broker": "broker.example.com",
+    "port": 8883,
+    "topic": "rtu/data",
+    "qos": 1,
+    "tls": {
+      "ca_cert": "certs/ca.crt",
+      "client_cert": "certs/client.crt",
+      "client_key": "certs/client.key"
+    },
+    "auth": {
+      "username": "rtu1",
+      "password": "securePass123!"
+    }
+  },
+  "http": {
+    "enabled": true,
+    "port": 8443,
+    "ssl": {
+      "cert": "certs/server.crt",
+      "key": "certs/server.key"
+    }
+  },
+  "ota": {
+    "enabled": true,
+    "server": "https://ota.example.com",
+    "public_key": "certs/ota_public.pem",
+    "check_interval": 3600
+  },
+  "database": {
+    "path": "data/rtu.db",
+    "encryption_key": "DB_ENC_KEY_1234!",
+    "retention_days": 30,
+    "backup_interval": 86400
+  },
+  "security": {
+    "jwt_secret": "JWT_SECRET_5678!",
+    "users": {
+      "admin": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+    }
+  }
+}

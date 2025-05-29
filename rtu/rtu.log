@@ -1,0 +1,6 @@
+2025-05-19 23:36:13,560 - ERROR - Public key load failed: [Errno 2] No such file or directory: 'certs/ota_public.pem'
+2025-05-19 23:36:13,562 - ERROR - Database connection failed: unable to open database file
+2025-05-19 23:36:51,816 - ERROR - Public key load failed: [Errno 2] No such file or directory: 'certs/ota_public.pem'
+2025-05-19 23:36:51,817 - ERROR - Database connection failed: unable to open database file
+2025-05-19 23:38:20,466 - ERROR - Public key load failed: [Errno 2] No such file or directory: 'certs/ota_public.pem'
+2025-05-19 23:38:20,467 - ERROR - Database connection failed: unable to open database file

@@ -10,7 +10,7 @@ from datetime import datetime
 import requests
 
 
-TELEMETRY_URL = "http://smk_engineering.test/api/key/telemetry"
+TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
 API_KEY = "43fc6317-b9e7-4b5a-859c-a575d7e03fd6"
 DEVICE_LOCATION_ID = 1
 
@@ -45,7 +45,7 @@ class IndustrialGateway:
         conf = self.config["mqtt"]
         print(conf)
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="")
-        client.username_pw_set("coba", "coba")
+        client.username_pw_set("belerang", "Gj8Q4sOQ%LFA6#belerang")
         client.on_connect = self.on_connect
         client.on_message = self.on_message
         client.connect(conf["broker"], conf["port"])

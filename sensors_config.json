@@ -36,7 +36,7 @@
           }
         },
         {
-          "name": "tds",
+          "name": "tss",
           "type": "4-20mA",
           "slave_address": 1,
           "channel": 1,
@@ -44,12 +44,12 @@
             "input_min": 4,
             "input_max": 20,
             "output_min": 0,
-            "output_max": 2000,
-            "unit": "ppm"
+            "output_max": 50000,
+            "unit": "mg/l"
           }
         },
         {
-          "name": "tss",
+          "name": "tds",
           "type": "4-20mA",
           "slave_address": 1,
           "channel": 2,
@@ -59,6 +59,19 @@
             "output_min": 0,
             "output_max": 3000,
             "unit": "ppm"
+          }
+        },
+        {
+          "name": "water_height",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "channel": 3,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 10,
+            "unit": "m"
           }
         }
       ]

@@ -12,7 +12,7 @@ import requests
 
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
 API_KEY = "43fc6317-b9e7-4b5a-859c-a575d7e03fd6"
-DEVICE_LOCATION_ID = 1
+DEVICE_LOCATION_ID = 8
 
 
 class IndustrialGateway:

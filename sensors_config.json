@@ -11,8 +11,8 @@
   "mqtt": {
     "broker": "eqmx.telemetry-adaro.id",
     "port": 1883,
-    "base_topic": "adaro/1",
-    "command_topic": "adaro/1/command",
+    "base_topic": "adaro/8",
+    "command_topic": "adaro/8/command",
     "qos": 1,
     "client_id": "industrial_gateway"
   },

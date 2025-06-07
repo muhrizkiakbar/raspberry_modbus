@@ -212,6 +212,7 @@ class IndustrialGateway:
                     "timestamp_humanize": datetime.fromtimestamp(time.time()).strftime(
                         "%Y-%m-%d %H:%M:%S"
                     ),
+                    "device_location_id": DEVICE_LOCATION_ID,
                     "sensors": [],
                 }
 

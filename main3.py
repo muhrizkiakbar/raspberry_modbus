@@ -23,7 +23,7 @@ OLED_HEIGHT = 64
 oled = Adafruit_SSD1306.SSD1306_128_64(rst=None)
 
 # Font Configuration
-font_path = "/home/pi/SMS/raspberry_modbus/Tahoma.ttf"
+font_path = "/home/pi//raspberry_modbus/fonts/Tahoma.ttf"
 font = ImageFont.truetype(font_path, 11)
 
 

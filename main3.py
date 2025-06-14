@@ -96,7 +96,8 @@ try:
                         if current >= 4:
                             # Contoh konversi TDS / pH / ppm, sesuaikan kebutuhan tiap channel
                             ph = (current - 4) * (14 / 16)
-                            oled_text = oled_text + "PH: %s" % (ph)
+
+                            oled_text = oled_text + "PH: %s" % (round(ph, 2))
                             print(f"→ PH: {ph:.2f}")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")
@@ -105,7 +106,7 @@ try:
                             # Contoh konversi TDS / pH / ppm, sesuaikan kebutuhan tiap channel
                             # ph = (current - 4) * (2000 / 16)
                             tds = (current - 4) * (2000 / 16)
-                            oled_text = oled_text + "\n TDS: %s" % (tds)
+                            oled_text = oled_text + "\n TDS: %s" % (round(tds, 2))
                             print(f"→ TDS: {tds:.2f} PPm")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")

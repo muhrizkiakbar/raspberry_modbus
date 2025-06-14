@@ -162,7 +162,7 @@ try:
                             # Contoh konversi TDS / pH / ppm, sesuaikan kebutuhan tiap channel
                             ph = (current - 4) * (14 / 16)
 
-                            oled_text = f"PH: {tds:.2f}"
+                            oled_text = f"PH: {ph:.2f}"
                             print(f"→ PH: {ph:.2f}")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")

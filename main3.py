@@ -27,32 +27,87 @@ font_path = "/home/pi//raspberry_modbus/fonts/Tahoma.ttf"
 font = ImageFont.truetype(font_path, 11)
 
 
-def display_message(line1, line2=""):
-    """Display messages on OLED screen"""
+def display_message(line1):
+    """Display messages on OLED screen with larger font and newline support"""
     try:
         oled.begin()
         oled.clear()
         image = Image.new("1", (OLED_WIDTH, OLED_HEIGHT))
         draw = ImageDraw.Draw(image)
 
-        char_width = font.getlength("A")
-        char_height = font.getbbox("A")[3]
-        max_chars_per_line = OLED_WIDTH // char_width
+        # Fungsi untuk wrap teks berdasarkan lebar piksel
+        def wrap_text(text, font, max_width):
+            words = text.split()
+            lines = []
+            current_line = []
+            current_width = 0
+            space_width = font.getlength(" ")
 
-        wrapped_text = textwrap.wrap(line1, width=max_chars_per_line)
-        total_text_height = len(wrapped_text) * char_height
-        y_offset = (OLED_HEIGHT - total_text_height) // 2
+            for word in words:
+                word_width = font.getlength(word)
 
-        for line in wrapped_text:
-            text_width = font.getlength(line)
-            x_offset = (OLED_WIDTH - text_width) // 2
-            draw.text((x_offset, y_offset), line, font=font, fill=255)
+                # Penanganan kata yang terlalu panjang
+                if word_width > max_width:
+                    # Pecah kata menjadi karakter-per-karakter
+                    chars = list(word)
+                    for char in chars:
+                        char_width = font.getlength(char)
+                        if (
+                            current_line
+                            and (current_width + space_width + char_width) <= max_width
+                        ):
+                            current_line.append(char)
+                            current_width += space_width + char_width
+                        else:
+                            if current_line:
+                                lines.append("".join(current_line))
+                            current_line = [char]
+                            current_width = char_width
+                    continue
+
+                # Hitung lebar baru jika menambahkan kata
+                if current_line:
+                    new_width = current_width + space_width + word_width
+                else:
+                    new_width = word_width
+
+                if new_width <= max_width:
+                    current_line.append(word)
+                    current_width = new_width
+                else:
+                    lines.append(" ".join(current_line))
+                    current_line = [word]
+                    current_width = word_width
+
+            if current_line:
+                lines.append(" ".join(current_line))
+            return lines
+
+        # Proses baris baru dan wrap teks
+        all_lines = []
+        for original_line in line1.split("\n"):
+            wrapped_lines = wrap_text(original_line, font, OLED_WIDTH)
+            all_lines.extend(wrapped_lines)
+
+        # Hitung dimensi teks
+        bbox = font.getbbox("A")  # Dapatkan bounding box
+        char_height = bbox[3] - bbox[1]  # Hitung tinggi karakter
+        total_text_height = len(all_lines) * char_height
+
+        # Hitung posisi vertikal mulai
+        y_offset = max(0, (OLED_HEIGHT - total_text_height) // 2)
+
+        # Gambar setiap baris
+        for line_text in all_lines:
+            text_width = font.getlength(line_text)
+            x_offset = max(0, (OLED_WIDTH - text_width) // 2)
+            draw.text((x_offset, y_offset), line_text, font=font, fill=255)
             y_offset += char_height
 
         oled.image(image)
         oled.display()
     except Exception as e:
-        logging.error(f"OLED Display Error: {e}")
+        print(f"OLED Display Error: {e}")
 
 
 def read_analog_channel(slave_address, channel_address):

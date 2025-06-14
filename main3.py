@@ -24,11 +24,11 @@ oled = Adafruit_SSD1306.SSD1306_128_64(rst=None)
 
 # Font Configuration
 font_path = "/home/pi//raspberry_modbus/fonts/Tahoma.ttf"
-font = ImageFont.truetype(font_path, 11)
+font = ImageFont.truetype(font_path, 15)
 
 
-def display_message(line1):
-    """Display messages on OLED screen with larger font and newline support"""
+def display_message(line1, top_margin=8, bottom_margin=8):
+    """Display messages on OLED screen with top and bottom margin"""
     try:
         oled.begin()
         oled.clear()
@@ -92,15 +92,22 @@ def display_message(line1):
         # Hitung dimensi teks
         bbox = font.getbbox("A")  # Dapatkan bounding box
         char_height = bbox[3] - bbox[1]  # Hitung tinggi karakter
+
+        # Hitung total tinggi teks yang akan ditampilkan
         total_text_height = len(all_lines) * char_height
 
-        # Hitung posisi vertikal mulai
-        y_offset = max(0, (OLED_HEIGHT - total_text_height) // 2)
+        # Hitung posisi vertikal mulai dengan margin atas
+        y_offset = top_margin
 
         # Gambar setiap baris
         for line_text in all_lines:
             text_width = font.getlength(line_text)
             x_offset = max(0, (OLED_WIDTH - text_width) // 2)
+
+            # Berhenti menggambar jika melewati margin bawah
+            if y_offset + char_height > OLED_HEIGHT - bottom_margin:
+                break
+
             draw.text((x_offset, y_offset), line_text, font=font, fill=255)
             y_offset += char_height
 

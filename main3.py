@@ -75,6 +75,7 @@ CHANNEL_COUNT = 2  # Total 7 channel analog
 
 try:
     while True:
+        oled_text = ""
         for i in range(CHANNEL_COUNT):
             channel_address = 0x0000 + i  # Register berturut dari 0x0000, 0x0001, ...
             request = read_analog_channel(SLAVE_ADDRESS, channel_address)
@@ -95,6 +96,7 @@ try:
                         if current >= 4:
                             # Contoh konversi TDS / pH / ppm, sesuaikan kebutuhan tiap channel
                             ph = (current - 4) * (14 / 16)
+                            oled_text = oled_text + "PH: %s" % (ph)
                             print(f"→ PH: {ph:.2f}")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")
@@ -102,8 +104,9 @@ try:
                         if current >= 4:
                             # Contoh konversi TDS / pH / ppm, sesuaikan kebutuhan tiap channel
                             # ph = (current - 4) * (2000 / 16)
-                            ph = (current - 4) * (2000 / 16)
-                            print(f"→ TDS: {ph:.2f} PPm")
+                            tds = (current - 4) * (2000 / 16)
+                            oled_text = oled_text + "\n TDS: %s" % (tds)
+                            print(f"→ TDS: {tds:.2f} PPm")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")
                     elif (i + 1) == 3:
@@ -123,6 +126,7 @@ try:
 
             time.sleep(0.2)  # Delay antar channel untuk stabilitas komunikasi
 
+        display_message(oled_text)
         time.sleep(2)  # Delay antar siklus pembacaan
 
 except KeyboardInterrupt:

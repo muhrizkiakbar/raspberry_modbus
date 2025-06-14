@@ -21,6 +21,9 @@ crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
 OLED_WIDTH = 128
 OLED_HEIGHT = 64
 oled = Adafruit_SSD1306.SSD1306_128_64(rst=None)
+oled.begin()
+oled.clear()
+oled.display()
 
 # Font Configuration
 font_path = "/home/pi//raspberry_modbus/fonts/Tahoma.ttf"
@@ -30,8 +33,6 @@ font = ImageFont.truetype(font_path, 15)
 def display_message(line1, top_margin=8, bottom_margin=8):
     """Display messages on OLED screen with top and bottom margin"""
     try:
-        oled.begin()
-        oled.clear()
         image = Image.new("1", (OLED_WIDTH, OLED_HEIGHT))
         draw = ImageDraw.Draw(image)
 

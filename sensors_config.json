@@ -44,7 +44,7 @@
             "input_min": 4,
             "input_max": 20,
             "output_min": 0,
-            "output_max": 50000,
+            "output_max": 3000,
             "unit": "mg/l"
           }
         },

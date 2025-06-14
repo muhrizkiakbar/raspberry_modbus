@@ -112,6 +112,8 @@ def display_message(line1, top_margin=8, bottom_margin=8):
             draw.text((x_offset, y_offset), line_text, font=font, fill=255)
             y_offset += char_height
 
+        image = image.rotate(180)
+
         oled.image(image)
         oled.display()
     except Exception as e:
@@ -169,7 +171,7 @@ try:
                             # Contoh konversi TDS / pH / ppm, sesuaikan kebutuhan tiap channel
                             # ph = (current - 4) * (2000 / 16)
                             tds = (current - 4) * (2000 / 16)
-                            oled_text = oled_text + "\n -- \n TDS: %s" % (round(tds, 2))
+                            oled_text = oled_text + "\n -- \n TDS: %s" % (tds)
                             print(f"→ TDS: {tds:.2f} PPm")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")

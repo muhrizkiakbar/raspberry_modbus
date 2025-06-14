@@ -136,8 +136,8 @@ SLAVE_ADDRESS = 0x01
 CHANNEL_COUNT = 2  # Total 7 channel analog
 
 try:
+    oled_text = ""
     while True:
-        oled_text = ""
         for i in range(CHANNEL_COUNT):
             channel_address = 0x0000 + i  # Register berturut dari 0x0000, 0x0001, ...
             request = read_analog_channel(SLAVE_ADDRESS, channel_address)
@@ -159,7 +159,7 @@ try:
                             # Contoh konversi TDS / pH / ppm, sesuaikan kebutuhan tiap channel
                             ph = (current - 4) * (14 / 16)
 
-                            oled_text = oled_text + "PH: %s" % (round(ph, 2))
+                            oled_text = "PH: %s" % (round(ph, 2))
                             print(f"→ PH: {ph:.2f}")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")

@@ -1,0 +1,78 @@
+{
+  "serial_ports": {
+    "/dev/ttyUSB0": {
+      "baudrate": 4800,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "description": "Radar Flow Meter Connection"
+    }
+  },
+  "mqtt": {
+    "broker": "eqmx.telemetry-adaro.id",
+    "port": 1883,
+    "base_topic": "adaro/99",
+    "command_topic": "adaro/99/command",
+    "qos": 1,
+    "client_id": "industrial_gateway"
+  },
+  "devices": [
+    {
+      "name": "Flow_Meter_RS485",
+      "port": "/dev/ttyUSB0",
+      "type": "direct_rs485",
+      "section_parameters": {
+        "section_type": 1,
+        "size1": 2600,
+        "size2": 1000,
+        "size3": 7000
+      },
+      "sensors": [
+        {
+          "name": "Instantaneous Flow",
+          "type": "rs485",
+          "slave_address": 1,
+          "register_address": 1002,
+          "conversion": {
+            "register_type": "16bit_int",
+            "scaling_factor": 0.001,
+            "unit": "m³/s"
+          }
+        },
+        {
+          "name": "Water Level",
+          "type": "rs485",
+          "slave_address": 1,
+          "register_address": 1003,
+          "conversion": {
+            "register_type": "16bit_int",
+            "scaling_factor": 1,
+            "unit": "mm"
+          }
+        },
+        {
+          "name": "Velocity",
+          "type": "rs485",
+          "slave_address": 1,
+          "register_address": 1004,
+          "conversion": {
+            "register_type": "16bit_int",
+            "scaling_factor": 0.01,
+            "unit": "m/s"
+          }
+        },
+        {
+          "name": "Water Volume",
+          "type": "rs485",
+          "slave_address": 1,
+          "register_address": 1000,
+          "conversion": {
+            "register_type": "32bit_int",
+            "scaling_factor": 1,
+            "unit": "m³"
+          }
+        }
+      ]
+    }
+  ]
+}

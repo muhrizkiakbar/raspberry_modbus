@@ -38,6 +38,9 @@ sensors = [
     {"name": "Flow Meter", "value": 10.5, "unit": "L/min", "min": 0, "max": 20, "warn_min": 5, "warn_max": 15},
     {"name": "Velocity", "value": 2.5, "unit": "m/s", "min": 0, "max": 5, "warn_min": 1, "warn_max": 4},
     {"name": "Debit", "value": 150, "unit": "m³/h", "min": 0, "max": 300, "warn_min": 100, "warn_max": 200},
+    {"name": "Temperature", "value": 150, "unit": "m³/h", "min": 0, "max": 300, "warn_min": 100, "warn_max": 200},
+    {"name": "Solar Radiation", "value": 150, "unit": "m³/h", "min": 0, "max": 300, "warn_min": 100, "warn_max": 200},
+    {"name": "Wind Speed", "value": 150, "unit": "m³/h", "min": 0, "max": 300, "warn_min": 100, "warn_max": 200},
 ]
 
 # Fungsi untuk menggambar panel dengan sudut membulat (versi lebih efisien)

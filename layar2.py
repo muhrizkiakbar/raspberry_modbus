@@ -130,8 +130,7 @@ def display_sensor_page(page_number, time_left):
             draw_rounded_panel(draw, x, y, panel_width, panel_height, 15, PANEL_COLOR)
             
             # Tampilkan ikon sensor
-            draw.text((x + 40, y + panel_height//2), page_sensors[0]["icon"], 
-                     font=font_value, fill=ACCENT_COLOR, anchor="lm")
+            # draw.text((x + 40, y + panel_height//2), page_sensors[0]["icon"], font=font_value, fill=ACCENT_COLOR, anchor="lm")
             
             # Tampilkan nama sensor
             draw.text((x + 120, y + 40), page_sensors[0]["name"], 
@@ -159,8 +158,7 @@ def display_sensor_page(page_number, time_left):
                 draw_rounded_panel(draw, x, y, panel_width, panel_height, 15, PANEL_COLOR)
                 
                 # Tampilkan ikon sensor
-                draw.text((x + 30, y + 30), sensor["icon"], 
-                         font=font_label, fill=ACCENT_COLOR)
+                # draw.text((x + 30, y + 30), sensor["icon"], font=font_label, fill=ACCENT_COLOR)
                 
                 # Tampilkan nama sensor
                 draw.text((x + 30, y + 70), sensor["name"], 
@@ -193,8 +191,7 @@ def display_sensor_page(page_number, time_left):
                 draw_rounded_panel(draw, x, y, panel_width, panel_height, 15, PANEL_COLOR)
                 
                 # Tampilkan ikon sensor
-                draw.text((x + 20, y + 25), sensor["icon"], 
-                         font=font_label, fill=ACCENT_COLOR)
+                #draw.text((x + 20, y + 25), sensor["icon"], font=font_label, fill=ACCENT_COLOR)
                 
                 # Tampilkan nama sensor
                 draw.text((x + 20, y + 55), sensor["name"], 
@@ -222,8 +219,7 @@ def display_sensor_page(page_number, time_left):
                 draw_rounded_panel(draw, x, y, panel_width, panel_height, 10, PANEL_COLOR)
                 
                 # Tampilkan ikon sensor
-                draw.text((x + 15, y + 20), sensor["icon"], 
-                         font=font_label, fill=ACCENT_COLOR)
+                # draw.text((x + 15, y + 20), sensor["icon"], font=font_label, fill=ACCENT_COLOR)
                 
                 # Tampilkan nama sensor
                 name_text = sensor["name"][:12] + "..." if len(sensor["name"]) > 12 else sensor["name"]

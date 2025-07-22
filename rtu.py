@@ -23,6 +23,7 @@ DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID"))
 class RTU:
     def __init__(self, config_file):
         self.config = self.load_config(config_file)
+        println(self.config)
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
         self.crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)

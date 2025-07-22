@@ -4,7 +4,7 @@ import struct
 
 
 class Flowmeter:
-    def __init__(self, ser_ports, port, config):
+    def __init__(self, ser_ports, config):
         self.config = config
         self.ser_ports = ser_ports
         self.crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
@@ -262,7 +262,11 @@ class Flowmeter:
     def apply_section_configurations(self):
         """Apply section configurations for all direct_rs485 devices"""
         for device in self.config["devices"]:
-            if device["type"] == "direct_rs485" and "section_parameters" in device:
+            if (
+                device["type"] == "direct_rs485"
+                and "section_parameters" in device
+                and device["name"] == "Flowmeter"
+            ):
                 port = device["port"]
 
                 # Periksa apakah port tersedia

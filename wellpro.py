@@ -2,12 +2,12 @@ import crcmod
 
 
 class Wellpro:
-    def __init__(self, ser_ports, port, config):
+    def __init__(self, ser_ports, config):
         self.config = config
         self.ser_ports = ser_ports
         self.crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
 
-    def read_analog(self, port, sensor_config):
+    def read_analog(self, sensor_config, port):
         frame = bytes(
             [
                 sensor_config["slave_address"],

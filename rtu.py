@@ -39,7 +39,7 @@ class RTU:
             "Accept": "application/json",
         }
         try:
-            response = requests.get(url, headers=headers, verify=False)
+            response = requests.get(url, headers=headers, verify="cert.pem")
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:

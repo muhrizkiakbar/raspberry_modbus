@@ -16,7 +16,7 @@ from wellpro import Wellpro
 
 load_dotenv("/home/ftp/modbus/.env")
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
-API_KEY = "43fc6317-b9e7-4b5a-859c-a575d7e03fd6"
+API_KEY = "03e4e280-428a-402e-b00b-55f9851eeeb6"
 DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID"))
 
 

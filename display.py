@@ -222,6 +222,9 @@ class Display:
                     )
 
                     # Unit (di bawah nama sensor, kiri)
+                    value_color = self.get_value_color(sensor)
+                    value_text = f"{sensor['value']}"
+                    value_width = draw.textlength(value_text, font=self.font_value)
                     draw.text(
                         (x + panel_width - value_width - 10, y + 10),
                         sensor["unit"],
@@ -230,9 +233,6 @@ class Display:
                     )
 
                     # Sensor value (top right)
-                    value_color = self.get_value_color(sensor)
-                    value_text = f"{sensor['value']}"
-                    value_width = draw.textlength(value_text, font=self.font_value)
                     draw.text(
                         (x + 10, y + 40),
                         value_text,

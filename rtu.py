@@ -197,6 +197,8 @@ class RTU:
                             print("==================================================")
                             print(sensor)
                             print("==================================================")
+                            print(sensor_data)
+                            print("==================================================")
 
                             # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai
                             # Misal: sensor name "Instantaneous Flow" -> debit

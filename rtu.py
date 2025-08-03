@@ -156,6 +156,8 @@ class RTU:
                     "solar_radiation": 0.0,
                     "evaporation": 0.0,
                     "dissolve_oxygen": 0.0,
+                    "velocity": 0.0,
+                    "water_volume": 0.0,
                 }
 
                 # Baca semua sensor terlebih dahulu
@@ -213,9 +215,11 @@ class RTU:
                                 payload_api["water_height"] = float(value)
                                 sensor_data[sensor["name"]]["value"] = float(value)
                             elif sensor["name"] == "water_volume":
+                                print(sensor["name"])
                                 payload_api["water_volume"] = float(value)
                                 sensor_data[sensor["name"]]["value"] = float(value)
                             elif sensor["name"] == "velocity":
+                                print(sensor["name"])
                                 payload_api["velocity"] = float(value)
                                 sensor_data[sensor["name"]]["value"] = float(value)
                         else:

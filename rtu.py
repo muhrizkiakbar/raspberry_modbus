@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import os
 from flowmeter import Flowmeter
 from wellpro import Wellpro
+from display import Display
 
 
 load_dotenv("/home/ftp/modbus/.env")
@@ -29,6 +30,7 @@ class RTU:
         self.crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
         self.flowmeter = Flowmeter(self.ser_ports, self.config)
         self.wellpro = Wellpro(self.ser_ports, self.config)
+        self.display = Display()
 
         self.restart_requested = False
         self.report_requested = False
@@ -124,8 +126,13 @@ class RTU:
         python = sys.executable
 
     def monitor_all_devices(self):
+        current_page = 0
+        last_change = time.time()
         try:
             while not self.restart_requested:
+                now = time.time()
+                time_left = 20 - int(now - last_change)
+
                 payload = {
                     "timestamp": time.time(),
                     "timestamp_humanize": datetime.fromtimestamp(time.time()).strftime(
@@ -215,6 +222,16 @@ class RTU:
                 # Publish semua data sekaligus
                 print(payload)
                 if payload["sensors"]:
+                    page_count = (len(payload["sensors"]) + 5) // 6
+
+                    self.display.display_sensor_page(
+                        payload["sensors"], current_page, time_left
+                    )
+
+                    if now - last_change >= 20:
+                        last_change = now
+                        current_page = (current_page + 1) % page_count
+
                     topic = f"{self.config['mqtt']['base_topic']}"
                     self.mqtt_client.publish(
                         topic, json.dumps(payload), qos=self.config["mqtt"]["qos"]
@@ -239,6 +256,7 @@ class RTU:
                 self.restart_application()
 
         except KeyboardInterrupt:
+            self.display.cleanup()
             self.graceful_shutdown()
             print("\nAplikasi dihentikan oleh pengguna")
 

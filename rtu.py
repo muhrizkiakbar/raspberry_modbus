@@ -242,9 +242,9 @@ class RTU:
                 if payload["sensors"]:
                     page_count = (len(payload["sensors"]) + 5) // 6
 
-                    self.display.display_sensor_page(
-                        payload["sensors"], current_page, time_left
-                    )
+                    # self.display.display_sensor_page(
+                    #    payload["sensors"], current_page, time_left
+                    # )
 
                     if now - last_change >= 20:
                         last_change = now

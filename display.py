@@ -299,7 +299,7 @@ class Display:
                 (480 // 2 - countdown_width // 2, footer_y + footer_height // 2),
                 countdown_text,
                 font=self.font_countdown,
-                fill=(200, 200, 100),
+                fill=(0, 0, 0),
                 anchor="lm",
             )
 

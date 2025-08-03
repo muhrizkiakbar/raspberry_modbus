@@ -23,6 +23,9 @@ class Display:
         self.font_value = ImageFont.truetype(
             "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 24
         )
+        self.font_small_value = ImageFont.truetype(  # Added for long values
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 20
+        )
         self.font_unit = ImageFont.truetype(
             "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 18
         )
@@ -34,6 +37,9 @@ class Display:
         )
         self.font_countdown = ImageFont.truetype(
             "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 16
+        )
+        self.font_status = ImageFont.truetype(  # Added for status
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 18
         )
 
         # Color theme
@@ -74,6 +80,30 @@ class Display:
         if sensor["status"] != "OK":
             return self.WARNING_COLOR
         return self.HIGHLIGHT_COLOR
+
+    def format_value(self, value, max_chars=8):
+        """Format value to fit in display"""
+        if isinstance(value, float):
+            # Format float values based on magnitude
+            if value == 0:
+                return "0"
+            abs_val = abs(value)
+            if abs_val >= 1000 or abs_val < 0.001:
+                return f"{value:.2e}"
+            elif abs_val >= 100:
+                return f"{value:.1f}"
+            elif abs_val >= 10:
+                return f"{value:.2f}"
+            elif abs_val >= 1:
+                return f"{value:.3f}"
+            else:
+                return f"{value:.4f}"
+        else:
+            # For non-float values, just convert to string
+            str_val = str(value)
+            if len(str_val) > max_chars:
+                return str_val[: max_chars - 2] + ".."
+            return str_val
 
     def display_sensor_page(self, sensor_data, current_page, time_left):
         """
@@ -151,11 +181,20 @@ class Display:
 
                 # Sensor value
                 value_color = self.get_value_color(page_sensors[0])
-                value_text = f"{page_sensors[0]['value']} {page_sensors[0]['unit']}"
+                formatted_value = self.format_value(page_sensors[0]["value"])
+                value_text = f"{formatted_value} {page_sensors[0]['unit']}"
                 value_font = ImageFont.truetype(
                     "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 36
                 )
                 value_width = draw.textlength(value_text, font=value_font)
+
+                # If value is too long, use smaller font
+                if value_width > panel_width - 40:
+                    value_font = ImageFont.truetype(
+                        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 28
+                    )
+                    value_width = draw.textlength(value_text, font=value_font)
+
                 draw.text(
                     (x + panel_width // 2 - value_width // 2, y + 100),
                     value_text,
@@ -177,7 +216,7 @@ class Display:
                     fill=status_color,
                 )
             else:
-                # Grid layout (3x2)
+                # Grid layout (3x2) - IMPROVED LAYOUT
                 cols = 2
                 rows = 3
                 panel_width = 220
@@ -198,11 +237,22 @@ class Display:
                         draw, x, y, panel_width, panel_height, 8, self.PANEL_COLOR
                     )
 
-                    # Sensor name
+                    value_color = self.get_value_color(sensor)
+
+                    # Sensor name - top left
                     name_text = sensor["name"]
-                    if draw.textlength(name_text, font=self.font_label) > 140:
+                    if draw.textlength(name_text, font=self.font_label) > 100:
+                        # Truncate name if too long
+                        while (
+                            draw.textlength(name_text + "...", font=self.font_label)
+                            > 100
+                            and len(name_text) > 1
+                        ):
+                            name_text = name_text[:-1]
                         name_text = (
-                            name_text[:12] + "..." if len(name_text) > 12 else name_text
+                            name_text + "..."
+                            if len(name_text) > 1
+                            else name_text[:3] + "..."
                         )
                     draw.text(
                         (x + 10, y + 10),
@@ -211,39 +261,45 @@ class Display:
                         fill=self.TEXT_COLOR,
                     )
 
-                    # Sensor value
-                    value_color = self.get_value_color(sensor)
-                    value_text = f"{sensor['value']}"
-                    value_width = draw.textlength(value_text, font=self.font_value)
-                    draw.text(
-                        (x + panel_width - value_width - 10, y + 10),
-                        value_text,
-                        font=self.font_value,
-                        fill=value_color,
-                    )
-
-                    # Unit
-                    draw.text(
-                        (
-                            x
-                            + panel_width
-                            - draw.textlength(sensor["unit"], font=self.font_unit)
-                            - 10,
-                            y + 40,
-                        ),
-                        sensor["unit"],
-                        font=self.font_unit,
-                        fill=(180, 180, 200),
-                    )
-
-                    # Status indicator
+                    # Sensor status - bottom left
                     status = sensor["status"]
                     status_color = (
                         self.HIGHLIGHT_COLOR if status == "OK" else self.WARNING_COLOR
                     )
-                    status_width = draw.textlength(status, font=self.font_unit)
                     draw.text(
-                        (x + 10, y + 40), status, font=self.font_unit, fill=status_color
+                        (x + 10, y + panel_height - 25),
+                        status,
+                        font=self.font_status,
+                        fill=status_color,
+                    )
+
+                    # Sensor value - top right
+                    formatted_value = self.format_value(sensor["value"])
+
+                    # Choose font based on value length
+                    value_font = self.font_value
+                    if len(formatted_value) > 8:
+                        value_font = self.font_small_value
+
+                    value_text = f"{formatted_value}"
+                    value_width = draw.textlength(value_text, font=value_font)
+
+                    # Position value at top right
+                    draw.text(
+                        (x + panel_width - value_width - 10, y + 10),
+                        value_text,
+                        font=value_font,
+                        fill=value_color,
+                    )
+
+                    # Unit - bottom right
+                    unit_text = sensor["unit"]
+                    unit_width = draw.textlength(unit_text, font=self.font_unit)
+                    draw.text(
+                        (x + panel_width - unit_width - 10, y + panel_height - 25),
+                        unit_text,
+                        font=self.font_unit,
+                        fill=(180, 180, 200),
                     )
 
             # Footer

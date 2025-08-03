@@ -223,7 +223,7 @@ class Display:
 
                     # Unit (di bawah nama sensor, kiri)
                     draw.text(
-                        (x + 10, y + 40),
+                        (x + panel_width - value_width - 10, y + 10),
                         sensor["unit"],
                         font=self.font_unit,
                         fill=(180, 180, 200),
@@ -234,7 +234,7 @@ class Display:
                     value_text = f"{sensor['value']}"
                     value_width = draw.textlength(value_text, font=self.font_value)
                     draw.text(
-                        (x + panel_width - value_width - 10, y + 10),
+                        (x + 10, y + 40),
                         value_text,
                         font=self.font_value,
                         fill=value_color,

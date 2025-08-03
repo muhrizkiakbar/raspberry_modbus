@@ -165,12 +165,18 @@ class RTU:
                         value = None
 
                         # Membaca nilai sensor
-                        if device["type"] == "analog_io":
+                        if (
+                            device["type"] == "analog_io"
+                            and device["name"] == "Wellpro"
+                        ):
                             value = self.wellpro.read_analog(sensor, device_port)
                         # elif device["type"] == "digital_io":
                         # if sensor["type"] == "digital_in":
                         # value = self.read_digital_input(sensor)
-                        elif device["type"] == "direct_rs485":
+                        elif (
+                            device["type"] == "direct_rs485"
+                            and device["name"] == "FlowMeter"
+                        ):
                             value = self.flowmeter.read_rs485_direct(
                                 sensor, device_port
                             )

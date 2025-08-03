@@ -195,8 +195,10 @@ class RTU:
                         print("==============================")
 
                         if value is not None and value >= 0:
-                            payload_api[sensor["name"]] = float(value)
-                            sensor_data[sensor["name"]]["value"] = float(value)
+                            payload_api[sensor["name"]] = round(float(value), 2)
+                            sensor_data[sensor["name"]]["value"] = round(
+                                float(value), 2
+                            )
                             sensor_data[sensor["name"]]["status"] = "OK"
 
                             print("============================")
@@ -205,8 +207,10 @@ class RTU:
                             # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai
                             # Misal: sensor name "Instantaneous Flow" -> debit
                             if sensor["name"] == "debit":
-                                payload_api["debit"] = float(value)
-                                sensor_data[sensor["name"]]["value"] = float(value)
+                                payload_api["debit"] = round(float(value), 2)
+                                sensor_data[sensor["name"]]["value"] = round(
+                                    float(value), 2
+                                )
                             elif sensor["name"] == "water_height":
                                 # Jangan dihapus komentar ini
                                 # 65535 angka tinggi  maksimal
@@ -219,14 +223,20 @@ class RTU:
                                 value = (
                                     penampang_bawah + penampang_atas - (65535 - value)
                                 )
-                                payload_api["water_height"] = float(value)
-                                sensor_data[sensor["name"]]["value"] = float(value)
+                                payload_api["water_height"] = round(float(value), 2)
+                                sensor_data[sensor["name"]]["value"] = round(
+                                    float(value), 2
+                                )
                             elif sensor["name"] == "water_volume":
-                                payload_api["water_volume"] = float(value)
-                                sensor_data[sensor["name"]]["value"] = float(value)
+                                payload_api["water_volume"] = round(float(value), 2)
+                                sensor_data[sensor["name"]]["value"] = round(
+                                    float(value), 2
+                                )
                             elif sensor["name"] == "velocity":
-                                payload_api["velocity"] = float(value)
-                                sensor_data[sensor["name"]]["value"] = float(value)
+                                payload_api["velocity"] = round(float(value), 2)
+                                sensor_data[sensor["name"]]["value"] = round(
+                                    float(value), 2
+                                )
                         else:
                             sensor_data[sensor["name"]]["value"] = None
                             sensor_data[sensor["name"]]["error"] = (

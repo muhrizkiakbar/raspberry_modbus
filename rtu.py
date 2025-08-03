@@ -165,25 +165,25 @@ class RTU:
                         value = None
 
                         # Membaca nilai sensor
-                            print(device["name"])
-                            if (
-                                device["type"] == "analog_io"
-                                and device["name"] == "Wellpro"
-                            ):
-                                value = self.wellpro.read_analog(sensor, device_port)
+                        print(device["name"])
+                        if (
+                            device["type"] == "analog_io"
+                            and device["name"] == "Wellpro"
+                        ):
+                            value = self.wellpro.read_analog(sensor, device_port)
                             # elif device["type"] == "digital_io":
                             # if sensor["type"] == "digital_in":
                             # value = self.read_digital_input(sensor)
-                            elif (
-                                device["type"] == "direct_rs485"
-                                and device["name"] == "FlowMeter"
-                            ):
-                                value = self.flowmeter.read_rs485_direct(
-                                    sensor, device_port
-                                )
+                        elif (
+                            device["type"] == "direct_rs485"
+                            and device["name"] == "FlowMeter"
+                        ):
+                            value = self.flowmeter.read_rs485_direct(
+                                sensor, device_port
+                            )
 
-                            # Membuat entri data sensor
-                            sensor_data = {
+                        # Membuat entri data sensor
+                        sensor_data = {
                             sensor["name"]: {
                                 "sensor_type": sensor["type"],
                                 "unit": sensor["conversion"].get("unit", ""),

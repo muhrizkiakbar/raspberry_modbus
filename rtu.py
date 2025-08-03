@@ -192,13 +192,6 @@ class RTU:
                             payload_api[sensor["name"]] = float(value)
                             sensor_data[sensor["name"]]["value"] = float(value)
                             sensor_data[sensor["name"]]["status"] = "OK"
-                            print("==================================================")
-                            print(sensor["name"])
-                            print("==================================================")
-                            print(sensor)
-                            print("==================================================")
-                            print(sensor_data)
-                            print("==================================================")
 
                             # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai
                             # Misal: sensor name "Instantaneous Flow" -> debit
@@ -221,6 +214,9 @@ class RTU:
                                 sensor_data[sensor["name"]]["value"] = float(value)
                             elif sensor["name"] == "water_volume":
                                 payload_api["water_volume"] = float(value)
+                                sensor_data[sensor["name"]]["value"] = float(value)
+                            elif sensor["name"] == "velocity":
+                                payload_api["velocity"] = float(value)
                                 sensor_data[sensor["name"]]["value"] = float(value)
                         else:
                             sensor_data[sensor["name"]]["value"] = None

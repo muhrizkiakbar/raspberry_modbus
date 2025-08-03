@@ -197,14 +197,14 @@ class RTU:
                             print("==================================================")
                             print(sensor)
                             print("==================================================")
-                            print(sensor_data["name"])
+                            print(sensor_data)
                             print("==================================================")
 
                             # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai
                             # Misal: sensor name "Instantaneous Flow" -> debit
                             if sensor["name"] == "debit":
                                 payload_api["debit"] = float(value)
-                                sensor_data["name"]["value"] = float(value)
+                                sensor_data[sensor["name"]]["value"] = float(value)
                             elif sensor["name"] == "water Level":
                                 # Jangan dihapus komentar ini
                                 # 65535 angka tinggi  maksimal
@@ -218,10 +218,10 @@ class RTU:
                                     penampang_bawah + penampang_atas - (65535 - value)
                                 )
                                 payload_api["water_height"] = float(value)
-                                sensor_data["name"]["value"] = float(value)
+                                sensor_data[sensor["name"]]["value"] = float(value)
                             elif sensor["name"] == "water_volume":
                                 payload_api["water_volume"] = float(value)
-                                sensor_data["name"]["value"] = float(value)
+                                sensor_data[sensor["name"]]["value"] = float(value)
                         else:
                             sensor_data[sensor["name"]]["value"] = None
                             sensor_data[sensor["name"]]["error"] = (

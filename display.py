@@ -71,19 +71,34 @@ class Display:
 
     def get_value_color(self, sensor):
         """Determine text color based on sensor status"""
-        if sensor["value"] < sensor["warn_min"] or sensor["value"] > sensor["warn_max"]:
+        if sensor["status"] != "OK":
             return self.WARNING_COLOR
         return self.HIGHLIGHT_COLOR
 
-    def display_sensor_page(self, sensors, current_page, time_left):
+    def display_sensor_page(self, sensor_data, current_page, time_left):
         """
         Display a page of sensor data on the LCD
 
         Args:
-            sensors (list): List of sensor dictionaries
+            sensor_data (list): Raw sensor data in dictionary format
             current_page (int): Current page number (0-indexed)
             time_left (int): Time left for page switch in seconds
         """
+        # Transform sensor data to expected format
+        sensors = []
+        for item in sensor_data:
+            name = list(item.keys())[0]
+            data = item[name]
+            sensors.append(
+                {
+                    "name": name.upper(),
+                    "unit": data["unit"],
+                    "value": data["value"],
+                    "status": data["status"],
+                    "sensor_type": data["sensor_type"],
+                }
+            )
+
         with canvas(self.device) as draw:
             # Background
             draw.rectangle(self.device.bounding_box, fill=self.BG_COLOR)
@@ -125,6 +140,15 @@ class Display:
                     fill=self.TEXT_COLOR,
                 )
 
+                # Sensor type
+                type_text = f"Type: {page_sensors[0]['sensor_type']}"
+                draw.text(
+                    (x + 20, y + 50),
+                    type_text,
+                    font=self.font_unit,
+                    fill=self.TEXT_COLOR,
+                )
+
                 # Sensor value
                 value_color = self.get_value_color(page_sensors[0])
                 value_text = f"{page_sensors[0]['value']} {page_sensors[0]['unit']}"
@@ -133,32 +157,24 @@ class Display:
                 )
                 value_width = draw.textlength(value_text, font=value_font)
                 draw.text(
-                    (x + panel_width // 2 - value_width // 2, y + 70),
+                    (x + panel_width // 2 - value_width // 2, y + 100),
                     value_text,
                     font=value_font,
                     fill=value_color,
                 )
 
-                # Range indicators
-                min_text = f"Min: {page_sensors[0]['warn_min']}"
-                max_text = f"Max: {page_sensors[0]['warn_max']}"
-                draw.text(
-                    (x + 30, y + 140),
-                    min_text,
-                    font=self.font_label,
-                    fill=self.TEXT_COLOR,
+                # Status indicator
+                status = page_sensors[0]["status"]
+                status_color = (
+                    self.HIGHLIGHT_COLOR if status == "OK" else self.WARNING_COLOR
                 )
+                status_text = f"Status: {status}"
+                status_width = draw.textlength(status_text, font=self.font_label)
                 draw.text(
-                    (
-                        x
-                        + panel_width
-                        - 30
-                        - draw.textlength(max_text, font=self.font_label),
-                        y + 140,
-                    ),
-                    max_text,
+                    (x + panel_width // 2 - status_width // 2, y + 150),
+                    status_text,
                     font=self.font_label,
-                    fill=self.TEXT_COLOR,
+                    fill=status_color,
                 )
             else:
                 # Grid layout (3x2)
@@ -221,12 +237,7 @@ class Display:
                     )
 
                     # Status indicator
-                    status = "OK"
-                    if sensor["value"] < sensor["warn_min"]:
-                        status = "LOW"
-                    elif sensor["value"] > sensor["warn_max"]:
-                        status = "HIGH"
-
+                    status = sensor["status"]
                     status_color = (
                         self.HIGHLIGHT_COLOR if status == "OK" else self.WARNING_COLOR
                     )
@@ -266,10 +277,7 @@ class Display:
             # System status indicator
             status_color = self.HIGHLIGHT_COLOR
             for sensor in sensors:
-                if (
-                    sensor["value"] < sensor["warn_min"]
-                    or sensor["value"] > sensor["warn_max"]
-                ):
+                if sensor["status"] != "OK":
                     status_color = self.WARNING_COLOR
                     break
             draw.ellipse(

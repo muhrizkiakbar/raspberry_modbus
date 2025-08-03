@@ -224,7 +224,7 @@ class Display:
                     # Unit (di bawah nama sensor, kiri)
                     value_color = self.get_value_color(sensor)
                     value_text = f"{sensor['unit']}"
-                    value_width = draw.textlength(value_text, font=self.font_unit)
+                    value_width = draw.textlength(value_text, font=self.font_value)
                     draw.text(
                         (x + panel_width - value_width - 10, y + 10),
                         sensor["unit"],
@@ -235,7 +235,7 @@ class Display:
                     # Sensor value (top right)
                     draw.text(
                         (x + 10, y + 40),
-                        value_text,
+                        sensor["value"],
                         font=self.font_value,
                         fill=value_color,
                     )
@@ -299,7 +299,7 @@ class Display:
                 (480 // 2 - countdown_width // 2, footer_y + footer_height // 2),
                 countdown_text,
                 font=self.font_countdown,
-                fill=(0, 0, 0),
+                fill=(200, 200, 100),
                 anchor="lm",
             )
 

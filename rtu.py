@@ -197,7 +197,7 @@ class RTU:
                             print("==================================================")
                             print(sensor)
                             print("==================================================")
-                            print(sensor_data)
+                            print(sensor_data["name"])
                             print("==================================================")
 
                             # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai

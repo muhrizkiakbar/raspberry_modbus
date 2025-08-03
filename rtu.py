@@ -188,7 +188,11 @@ class RTU:
                                 "unit": sensor["conversion"].get("unit", ""),
                             }
                         }
+                        print("==================================================")
                         print(sensor["name"])
+                        print("==================================================")
+                        print(sensor)
+                        print("==================================================")
 
                         if value is not None and value >= 0:
                             payload_api[sensor["name"]] = float(value)

@@ -165,25 +165,25 @@ class RTU:
                         value = None
 
                         # Membaca nilai sensor
-                        print(device["name"])
-                        if (
-                            device["type"] == "analog_io"
-                            and device["name"] == "Wellpro"
-                        ):
-                            value = self.wellpro.read_analog(sensor, device_port)
-                        # elif device["type"] == "digital_io":
-                        # if sensor["type"] == "digital_in":
-                        # value = self.read_digital_input(sensor)
-                        elif (
-                            device["type"] == "direct_rs485"
-                            and device["name"] == "FlowMeter"
-                        ):
-                            value = self.flowmeter.read_rs485_direct(
-                                sensor, device_port
-                            )
+                            print(device["name"])
+                            if (
+                                device["type"] == "analog_io"
+                                and device["name"] == "Wellpro"
+                            ):
+                                value = self.wellpro.read_analog(sensor, device_port)
+                            # elif device["type"] == "digital_io":
+                            # if sensor["type"] == "digital_in":
+                            # value = self.read_digital_input(sensor)
+                            elif (
+                                device["type"] == "direct_rs485"
+                                and device["name"] == "FlowMeter"
+                            ):
+                                value = self.flowmeter.read_rs485_direct(
+                                    sensor, device_port
+                                )
 
-                        # Membuat entri data sensor
-                        sensor_data = {
+                            # Membuat entri data sensor
+                            sensor_data = {
                             sensor["name"]: {
                                 "sensor_type": sensor["type"],
                                 "unit": sensor["conversion"].get("unit", ""),
@@ -196,10 +196,10 @@ class RTU:
                             sensor_data[sensor["name"]]["status"] = "OK"
                             # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai
                             # Misal: sensor name "Instantaneous Flow" -> debit
-                            if sensor["name"] == "Debit":
+                            if sensor["name"] == "debit":
                                 payload_api["debit"] = float(value)
                                 sensor_data["name"]["value"] = float(value)
-                            elif sensor["name"] == "Water Level":
+                            elif sensor["name"] == "water Level":
                                 # Jangan dihapus komentar ini
                                 # 65535 angka tinggi  maksimal
                                 # 4000 = tinggi penampan dan tinggi letak sensor
@@ -213,7 +213,7 @@ class RTU:
                                 )
                                 payload_api["water_height"] = float(value)
                                 sensor_data["name"]["value"] = float(value)
-                            elif sensor["name"] == "Water Volume":
+                            elif sensor["name"] == "water_volume":
                                 payload_api["water_volume"] = float(value)
                                 sensor_data["name"]["value"] = float(value)
                         else:

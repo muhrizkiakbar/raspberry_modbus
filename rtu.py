@@ -191,8 +191,9 @@ class RTU:
                             }
                         }
                         print("============================")
-                        print(sensor["name"])
+                        print(sensor)
                         print("==============================")
+
                         if value is not None and value >= 0:
                             payload_api[sensor["name"]] = float(value)
                             sensor_data[sensor["name"]]["value"] = float(value)

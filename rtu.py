@@ -165,6 +165,7 @@ class RTU:
                         value = None
 
                         # Membaca nilai sensor
+                        print(device["name"])
                         if (
                             device["type"] == "analog_io"
                             and device["name"] == "Wellpro"

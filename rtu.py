@@ -245,9 +245,9 @@ class RTU:
                     print("****************************************")
                     print(payload["sensors"])
                     print("****************************************")
-                    # self.display.display_sensor_page(
-                    #    payload["sensors"], current_page, time_left
-                    # )
+                    self.display.display_sensor_page(
+                        payload["sensors"], current_page, time_left
+                    )
 
                     if now - last_change >= 20:
                         last_change = now

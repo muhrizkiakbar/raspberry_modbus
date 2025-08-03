@@ -218,8 +218,10 @@ class RTU:
                                 payload_api["water_volume"] = float(value)
                                 sensor_data[sensor["name"]]["value"] = float(value)
                             elif sensor["name"] == "velocity":
+                                print("============================")
                                 print(sensor_data[sensor["name"]])
                                 print(sensor["name"])
+                                print("==============================")
                                 payload_api["velocity"] = float(value)
                                 sensor_data[sensor["name"]]["value"] = float(value)
                         else:

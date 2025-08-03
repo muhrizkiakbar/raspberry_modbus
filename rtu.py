@@ -165,7 +165,6 @@ class RTU:
                         value = None
 
                         # Membaca nilai sensor
-                        print(device["name"])
                         if (
                             device["type"] == "analog_io"
                             and device["name"] == "Wellpro"
@@ -189,6 +188,7 @@ class RTU:
                                 "unit": sensor["conversion"].get("unit", ""),
                             }
                         }
+                        print(sensor["name"])
 
                         if value is not None and value >= 0:
                             payload_api[sensor["name"]] = float(value)

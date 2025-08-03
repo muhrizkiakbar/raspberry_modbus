@@ -188,16 +188,16 @@ class RTU:
                                 "unit": sensor["conversion"].get("unit", ""),
                             }
                         }
-                        print("==================================================")
-                        print(sensor["name"])
-                        print("==================================================")
-                        print(sensor)
-                        print("==================================================")
-
                         if value is not None and value >= 0:
                             payload_api[sensor["name"]] = float(value)
                             sensor_data[sensor["name"]]["value"] = float(value)
                             sensor_data[sensor["name"]]["status"] = "OK"
+                            print("==================================================")
+                            print(sensor["name"])
+                            print("==================================================")
+                            print(sensor)
+                            print("==================================================")
+
                             # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai
                             # Misal: sensor name "Instantaneous Flow" -> debit
                             if sensor["name"] == "debit":

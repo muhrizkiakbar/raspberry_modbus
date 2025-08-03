@@ -226,7 +226,7 @@ class Display:
                     value_text = f"{sensor['value']}"
                     value_width = draw.textlength(value_text, font=self.font_value)
                     draw.text(
-                        (x + panel_width - value_width - 10, y + 10),
+                        (x + panel_width - 10, y + 10),
                         sensor["unit"],
                         font=self.font_unit,
                         fill=(180, 180, 200),

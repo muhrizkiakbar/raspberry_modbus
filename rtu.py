@@ -203,7 +203,7 @@ class RTU:
                             if sensor["name"] == "debit":
                                 payload_api["debit"] = float(value)
                                 sensor_data[sensor["name"]]["value"] = float(value)
-                            elif sensor["name"] == "water Level":
+                            elif sensor["name"] == "water_height":
                                 # Jangan dihapus komentar ini
                                 # 65535 angka tinggi  maksimal
                                 # 4000 = tinggi penampan dan tinggi letak sensor

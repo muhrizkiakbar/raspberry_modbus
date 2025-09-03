@@ -19,7 +19,7 @@ load_dotenv("/home/ftp/modbus/.env")
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
 API_KEY = "03e4e280-428a-402e-b00b-55f9851eeeb6"
 DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID"))
-VERSION = 1.0.0
+VERSION = "1.0.0"
 
 
 class RTU:
@@ -141,7 +141,7 @@ class RTU:
                     ),
                     "device_location_id": DEVICE_LOCATION_ID,
                     "sensors": [],
-                    "version": VERSION
+                    "version": VERSION,
                 }
 
                 payload_api = {
@@ -222,9 +222,9 @@ class RTU:
                                 # value = 4000 - (65535 - value)
                                 penampang_bawah = device["section_parameters"]["size1"]
                                 penampang_atas = device["section_parameters"]["size3"]
-                                #value = (
+                                # value = (
                                 #    penampang_bawah + penampang_atas - (65535 - value)
-                                #)
+                                # )
                                 payload_api["water_height"] = round(float(value), 2)
                                 sensor_data[sensor["name"]]["value"] = round(
                                     float(value), 2

@@ -6,14 +6,14 @@ def read_sensor_data(client, slave_id=1):
     data = {}
 
     # Water Level (0x03EB)
-    res_level = client.read_holding_registers(address=0x03EB, count=1, unit=1)
+    res_level = client.read_holding_registers(0x03EB, 1, 1)
     if not res_level.isError():
         data["water_level_mm"] = res_level.registers[0]
     else:
         print("❌ Gagal baca Water Level")
 
     # Velocity (0x03EC)
-    res_velocity = client.read_holding_registers(address=0x03EC, count=1, unit=1)
+    res_velocity = client.read_holding_registers(0x03EC, 1, 1)
     if not res_velocity.isError():
         velocity_cms = res_velocity.registers[0]
         data["velocity_cms"] = velocity_cms
@@ -22,7 +22,7 @@ def read_sensor_data(client, slave_id=1):
         print("❌ Gagal baca Velocity")
 
     # Instantaneous Flow (0x03EA)
-    res_flow = client.read_holding_registers(address=0x03EA, count=1, unit=1)
+    res_flow = client.read_holding_registers(0x03EA, 1, 1)
     if not res_flow.isError():
         flow_raw = res_flow.registers[0]
         data["flow_m3s"] = flow_raw / 1000.0  # dibagi 1000

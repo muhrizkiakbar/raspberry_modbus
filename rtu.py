@@ -222,9 +222,9 @@ class RTU:
                                 # value = 4000 - (65535 - value)
                                 penampang_bawah = device["section_parameters"]["size1"]
                                 penampang_atas = device["section_parameters"]["size3"]
-                                value = (
-                                    penampang_bawah + penampang_atas - (65535 - value)
-                                )
+                                #value = (
+                                #    penampang_bawah + penampang_atas - (65535 - value)
+                                #)
                                 payload_api["water_height"] = round(float(value), 2)
                                 sensor_data[sensor["name"]]["value"] = round(
                                     float(value), 2

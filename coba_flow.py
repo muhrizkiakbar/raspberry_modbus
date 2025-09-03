@@ -67,7 +67,6 @@ def set_section_config(client, slave_id, section_type, size1=0, size2=0, size3=0
 
 if __name__ == "__main__":
     client = ModbusSerialClient(
-        method="rtu",
         port="/dev/ttyUSB0",  # ganti dengan 'COM3' kalau di Windows
         baudrate=9600,
         stopbits=1,

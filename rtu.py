@@ -19,6 +19,7 @@ load_dotenv("/home/ftp/modbus/.env")
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
 API_KEY = "03e4e280-428a-402e-b00b-55f9851eeeb6"
 DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID"))
+VERSION = 1.0.0
 
 
 class RTU:
@@ -140,6 +141,7 @@ class RTU:
                     ),
                     "device_location_id": DEVICE_LOCATION_ID,
                     "sensors": [],
+                    "version": VERSION
                 }
 
                 payload_api = {
@@ -177,7 +179,7 @@ class RTU:
                             # value = self.read_digital_input(sensor)
                         elif (
                             device["type"] == "direct_rs485"
-                            and device["name"] == "FlowMeter"
+                            and device["name"].lower() == "flowmeter"
                         ):
                             value = self.flowmeter.read_rs485_direct(
                                 sensor, device_port

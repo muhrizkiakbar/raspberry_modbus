@@ -158,7 +158,7 @@ class RTU:
 
                     if value is not None and sensor["name"] in payload_api:
                         payload_api[sensor["name"]] = (
-                            float(value)
+                            round(float(value), 1)
                             if isinstance(value, (int, float))
                             else int(value)
                         )

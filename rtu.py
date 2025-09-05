@@ -9,6 +9,7 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 from modbusampere import Modbusampere
+from display import Display
 
 load_dotenv("/home/ftp/modbus/.env")
 
@@ -27,6 +28,7 @@ class RTU:
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
         self.modbusampere = Modbusampere(self.ser_ports, self.config)
+        self.display = Display()
 
         self.report_requested = False
         self.restart_requested = False
@@ -114,7 +116,12 @@ class RTU:
             print(f"Error kirim API: {e}")
 
     def monitor_all_devices(self):
+        current_page = 0
+        last_change = time.time()
         while not self.restart_requested:
+            now = time.time()
+            time_left = 20 - int(now - last_change)
+
             if self.update_requested:
                 print("==================== UPDATING ==============================")
                 try:
@@ -197,11 +204,24 @@ class RTU:
                         )
 
             # Publish ke MQTT
-            topic = self.config["mqtt"]["base_topic"]
-            self.mqtt_client.publish(
-                topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]
-            )
-            print("MQTT Payload:", payload_mqtt)
+            if payload_mqtt["sensors"]:
+                page_count = (len(payload_mqtt["sensors"]) + 5) // 6
+
+                print("****************************************")
+                print(payload_mqtt["sensors"])
+                print("****************************************")
+                self.display.display_sensor_page(
+                    payload_mqtt["sensors"], current_page, time_left
+                )
+
+                if now - last_change >= 20:
+                    last_change = now
+                    current_page = (current_page + 1) % page_count
+                topic = self.config["mqtt"]["base_topic"]
+                self.mqtt_client.publish(
+                    topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]
+                )
+                print("MQTT Payload:", payload_mqtt)
 
             # Kirim ke API jika ada perintah report
             if self.report_requested:

@@ -13,8 +13,10 @@ load_dotenv("/home/ftp/modbus/.env")
 
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
 CONFIG_URL = "https://telemetry-adaro.id/api/key/device_location/{}/config"
-API_KEY = "03e4e280-428a-402e-b00b-55f9851eeeb6"
-DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", "1"))
+DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
+API_KEY = str(os.getenv("API_KEY", ""))
+MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
+MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
 VERSION = "1.0.0"
 
 
@@ -68,7 +70,7 @@ class RTU:
         client = mqtt.Client(
             mqtt.CallbackAPIVersion.VERSION2, client_id=conf["client_id"]
         )
-        client.username_pw_set("raspberry", "raspberry12345")
+        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
         client.on_connect = self.on_connect
         client.on_message = self.on_message
         client.connect(conf["broker"], conf["port"])

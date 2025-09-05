@@ -1,0 +1,85 @@
+{
+  "serial_ports": {
+    "/dev/ttyUSB0": {
+      "baudrate": 9600,
+      "bytesize": 8,
+      "parity": "N",
+      "stopbits": 1,
+      "description": "Wellpro 9038ADAM RS485"
+    }
+  },
+  "mqtt": {
+    "broker": "eqmx.telemetry-adaro.id",
+    "port": 1883,
+    "base_topic": "adaro/8",
+    "command_topic": "adaro/8/command",
+    "qos": 1,
+    "client_id": "industrial_gateway"
+  },
+  "devices": [
+    {
+      "name": "WellproAmpere",
+      "port": "/dev/ttyUSB0",
+      "type": "modbus",
+      "sensors": [
+        {
+          "name": "ph",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 14,
+            "unit": ""
+          },
+          "channel": 0
+        },
+        {
+          "name": "tds",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 3000,
+            "unit": "ppm"
+          },
+          "channel": 1
+        },
+        {
+          "name": "tss",
+          "type": "4-20mA",
+          "slave_address": 1,
+          "conversion": {
+            "input_min": 4,
+            "input_max": 20,
+            "output_min": 0,
+            "output_max": 1000,
+            "unit": "mg/L"
+          },
+          "channel": 2
+        },
+        {
+          "name": "curah_hujan",
+          "type": "digital_in",
+          "slave_address": 1,
+          "channel": 0
+        },
+        {
+          "name": "arah_angin",
+          "type": "digital_in",
+          "slave_address": 1,
+          "channel": 1
+        },
+        {
+          "name": "kecepatan_angin",
+          "type": "digital_in",
+          "slave_address": 1,
+          "channel": 2
+        }
+      ]
+    }
+  ]
+}

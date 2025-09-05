@@ -3,7 +3,7 @@ import serial
 
 # Konfigurasi koneksi
 instrument = minimalmodbus.Instrument(
-    "/dev/ttyUSB1", 1
+    "/dev/ttyUSB0", 1
 )  # port serial RS485, slave address=1
 instrument.serial.baudrate = 9600
 instrument.serial.bytesize = 8

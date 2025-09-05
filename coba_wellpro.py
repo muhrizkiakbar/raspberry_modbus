@@ -22,6 +22,7 @@ def read_analog_channels():
     for raw in values:
         # Konversi sesuai manual: I = DATA * 20 / 4095 (mA)
         current = raw * 20.0 / 4095.0
+        print(raw)
         currents.append(round(current, 3))
     return currents
 

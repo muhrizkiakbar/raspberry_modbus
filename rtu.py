@@ -136,16 +136,16 @@ class RTU:
                         print("Git pull berhasil")
 
                         # Install package apt
-                        print("Menjalankan sudo apt install hello -y...")
-                        apt_result = subprocess.run(
-                            ["sudo", "apt", "install", "hello", "-y"],
-                            capture_output=True,
-                            text=True,
-                        )
-                        if apt_result.returncode == 0:
-                            print("Package hello berhasil diinstall")
-                        else:
-                            print("Gagal install package hello:", apt_result.stderr)
+                        # print("Menjalankan sudo apt install hello -y...")
+                        # apt_result = subprocess.run(
+                        #    ["sudo", "apt", "install", "hello", "-y"],
+                        #    capture_output=True,
+                        #    text=True,
+                        # )
+                        # if apt_result.returncode == 0:
+                        #    print("Package hello berhasil diinstall")
+                        # else:
+                        #    print("Gagal install package hello:", apt_result.stderr)
 
                         # Install package pip
                         # pip_package = "somepackage"  # ganti sesuai kebutuhan

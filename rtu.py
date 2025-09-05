@@ -4,10 +4,11 @@ import time
 import paho.mqtt.client as mqtt
 import os
 import sys
+import subprocess
 from datetime import datetime
 import requests
 from dotenv import load_dotenv
-from wellproampere import Wellproampere
+from modbusampere import Modbusampere
 
 load_dotenv("/home/ftp/modbus/.env")
 
@@ -25,10 +26,11 @@ class RTU:
         self.config = self.load_config(config_file)
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
-        self.wellpro = Wellproampere(self.ser_ports, self.config)
+        self.modbusampere = Modbusampere(self.ser_ports, self.config)
 
         self.report_requested = False
         self.restart_requested = False
+        self.update_requested = False
 
     def load_config(self, config_file):
         url = CONFIG_URL.format(DEVICE_LOCATION_ID)
@@ -91,6 +93,8 @@ class RTU:
             self.report_requested = True
         elif payload == "restart":
             self.restart_requested = True
+        elif payload == "update":
+            self.update_requested = True
 
     def send_telemetry(self, payload_api):
         try:
@@ -111,6 +115,35 @@ class RTU:
 
     def monitor_all_devices(self):
         while not self.restart_requested:
+            if self.update_requested:
+                print("==================== UPDATING ==============================")
+                try:
+                    print("Menjalankan git pull origin master...")
+                    result = subprocess.run(
+                        ["git", "pull", "origin", "master"],
+                        capture_output=True,
+                        text=True,
+                    )
+                    print(result.stdout)
+                    if result.returncode == 0:
+                        print("Git pull berhasil, restart service...")
+                        # Restart service (misal systemd service 'modbus')
+                        subprocess.run(
+                            ["sudo", "systemctl", "restart", "modbus"], check=True
+                        )
+                        print("Service modbus berhasil direstart")
+                        # Hentikan loop untuk memastikan restart sempurna
+                        break
+                    else:
+                        print("Git pull gagal:", result.stderr)
+                except Exception as e:
+                    print("Error saat update:", e)
+                finally:
+                    self.update_requested = False
+                print(
+                    "==================== END UPDATING =============================="
+                )
+
             payload_mqtt = {
                 "timestamp": time.time(),
                 "timestamp_humanize": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -142,9 +175,9 @@ class RTU:
                 for sensor in device["sensors"]:
                     value = None
                     if sensor["type"] == "4-20mA":
-                        value = self.wellpro.read_analog(sensor, port)
+                        value = self.modbusampere.read_analog(sensor, port)
                     elif sensor["type"] == "digital_in":
-                        value = self.wellpro.read_digital_inputs(sensor, port)
+                        value = self.modbusampere.read_digital_inputs(sensor, port)
 
                     sensor_data = {
                         sensor["name"]: {

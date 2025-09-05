@@ -2,7 +2,7 @@ import minimalmodbus
 import serial
 
 
-class Wellproampere:
+class Modbusampere:
     def __init__(self, ser_ports, config):
         self.ser_ports = ser_ports
         self.config = config

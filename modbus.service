@@ -1,11 +1,11 @@
 [Unit]
-Description=SMS Gateway Service
+Description=modbus
 After=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python /home/pi/RTU/main4.py
-WorkingDirectory=/home/pi/RTU
+ExecStart=/usr/bin/python /home/pi/raspberry_modbus/rtu.py
+WorkingDirectory=/home/pi/raspberry_modbus
 StandardOutput=inherit
 StandardError=inherit
 Restart=always

@@ -19,7 +19,7 @@ DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
 API_KEY = str(os.getenv("API_KEY", ""))
 MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
 MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 
 class RTU:
@@ -135,6 +135,7 @@ class RTU:
                     if result.returncode == 0:
                         print("Git pull berhasil, restart service...")
                         # Restart service (misal systemd service 'modbus')
+                        subprocess.run(["sudo", "apt", "install", "hello"], check=True)
                         subprocess.run(
                             ["sudo", "systemctl", "restart", "modbus"], check=True
                         )
@@ -181,7 +182,7 @@ class RTU:
                 port = device["port"]
                 for sensor in device["sensors"]:
                     value = None
-                    if sensor["type"] == "4-20mA":
+                    if sensor["type"] == "4-20mA" and sensor["name"] == "modbusampere":
                         value = self.modbusampere.read_analog(sensor, port)
                     elif sensor["type"] == "digital_in":
                         value = self.modbusampere.read_digital_inputs(sensor, port)
@@ -191,7 +192,7 @@ class RTU:
                             "sensor_type": sensor["type"],
                             "unit": sensor.get("conversion", {}).get("unit", ""),
                             "value": round(value, 1),
-                            "status": "OK" if value is not None else "ERROR",
+                            "status": "OK" if value is not None else "error",
                         }
                     }
                     payload_mqtt["sensors"].append(sensor_data)

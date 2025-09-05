@@ -19,7 +19,8 @@ def read_depth():
         channel_height_mm = instrument.read_register(1043, 0, functioncode=3)
 
         # Hitung kedalaman
-        depth_mm = max(channel_height_mm - distance_mm, 0)
+        # depth_mm = max(channel_height_mm - distance_mm, 0)
+        depth_mm = 65535 - (distance_mm - channel_height_mm)
 
         return {
             "distance_mm": distance_mm,

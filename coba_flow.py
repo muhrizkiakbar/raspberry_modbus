@@ -32,16 +32,16 @@ def set_section_config(client, unit_id, section_type, size1=0, size2=0, size3=0)
         return False
 
     if section_type == 1:  # Trapezoid
-        client.write_register(address=0x0413, value=size1, unit=unit_id)
-        client.write_register(address=0x0414, value=size2, unit=unit_id)
-        client.write_register(address=0x0415, value=size3, unit=unit_id)
+        client.write_register(address=0x0413, value=size1)
+        client.write_register(address=0x0414, value=size2)
+        client.write_register(address=0x0415, value=size3)
         print(
             f"✅ Trapezoid diset: Tinggi={size1} mm, Lereng={size2} mm, Dasar={size3} mm"
         )
 
     elif section_type == 2:  # Rectangle
-        client.write_register(address=0x0413, value=size1, unit=unit_id)
-        client.write_register(address=0x0415, value=size3, unit=unit_id)
+        client.write_register(address=0x0413, value=size1)
+        client.write_register(address=0x0415, value=size3)
         print(f"✅ Rectangle diset: Tinggi={size1} mm, Dasar={size3} mm")
 
     return True
@@ -71,7 +71,9 @@ if __name__ == "__main__":
         # )
 
         # Set ke rectangle
-        set_section_config(client, unit_id, section_type=2, size1=200, size3=450)
+        set_section_config(
+            client, unit_id, section_type=2, size1=200, size2=0, size3=450
+        )
 
         client.close()
     else:

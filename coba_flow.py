@@ -20,7 +20,8 @@ def read_depth():
 
         # Hitung kedalaman
         # depth_mm = max(channel_height_mm - distance_mm, 0)
-        depth_mm = 65535 - (distance_mm - channel_height_mm)
+        # depth_mm = 65535 - (distance_mm - channel_height_mm)
+        depth_mm = channel_height_mm - distance_mm
 
         return {
             "distance_mm": distance_mm,

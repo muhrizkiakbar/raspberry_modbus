@@ -133,15 +133,45 @@ class RTU:
                     )
                     print(result.stdout)
                     if result.returncode == 0:
-                        print("Git pull berhasil, restart service...")
-                        # Restart service (misal systemd service 'modbus')
-                        subprocess.run(["sudo", "apt", "install", "hello"], check=True)
+                        print("Git pull berhasil")
+
+                        # Install package apt
+                        print("Menjalankan sudo apt install hello -y...")
+                        apt_result = subprocess.run(
+                            ["sudo", "apt", "install", "hello", "-y"],
+                            capture_output=True,
+                            text=True,
+                        )
+                        if apt_result.returncode == 0:
+                            print("Package hello berhasil diinstall")
+                        else:
+                            print("Gagal install package hello:", apt_result.stderr)
+
+                        # Install package pip
+                        # pip_package = "somepackage"  # ganti sesuai kebutuhan
+                        # print(
+                        #    f"Menjalankan pip install {pip_package} --break-system-packages..."
+                        # )
+                        # pip_result = subprocess.run(
+                        #    ["pip", "install", pip_package, "--break-system-packages"],
+                        #    capture_output=True,
+                        #    text=True,
+                        # )
+                        # if pip_result.returncode == 0:
+                        #    print(f"Package {pip_package} berhasil diinstall via pip")
+                        # else:
+                        #    print(
+                        #        f"Gagal install package {pip_package} via pip:",
+                        #        pip_result.stderr,
+                        #    )
+
+                        # Restart service modbus
+                        print("Restart service modbus...")
                         subprocess.run(
                             ["sudo", "systemctl", "restart", "modbus"], check=True
                         )
                         print("Service modbus berhasil direstart")
-                        # Hentikan loop untuk memastikan restart sempurna
-                        break
+                        break  # keluar loop agar service restart sempurna
                     else:
                         print("Git pull gagal:", result.stderr)
                 except Exception as e:

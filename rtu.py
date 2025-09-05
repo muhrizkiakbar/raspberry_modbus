@@ -140,7 +140,7 @@ class RTU:
                         sensor["name"]: {
                             "sensor_type": sensor["type"],
                             "unit": sensor.get("conversion", {}).get("unit", ""),
-                            "value": value,
+                            "value": round(value, 1),
                             "status": "OK" if value is not None else "ERROR",
                         }
                     }

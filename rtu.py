@@ -121,10 +121,18 @@ class RTU:
                 "device_location_id": DEVICE_LOCATION_ID,
                 "ph": 0.0,
                 "tds": 0.0,
-                "tss": 0.0,
-                "curah_hujan": 0,
-                "arah_angin": 0,
-                "kecepatan_angin": 0,
+                "debit": 0.0,
+                "rainfall": 0.0,
+                "water_height": 0.0,
+                "temperature": 0.0,
+                "humidity": 0.0,
+                "wind_direction": 0.0,
+                "wind_speed": 0.0,
+                "solar_radiation": 0.0,
+                "evaporation": 0.0,
+                "dissolve_oxygen": 0.0,
+                "velocity": 0.0,
+                "water_volume": 0.0,
             }
 
             for device in self.config["devices"]:

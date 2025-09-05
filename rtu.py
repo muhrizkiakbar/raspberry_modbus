@@ -1,54 +1,54 @@
 import serial
-import crcmod
 import json
 import time
-import struct
 import paho.mqtt.client as mqtt
 import os
 import sys
 from datetime import datetime
 import requests
 from dotenv import load_dotenv
-import os
-from flowmeter import Flowmeter
-from wellpro import Wellpro
-from display import Display
-
+from wellproampere import Wellproampere
 
 load_dotenv("/home/ftp/modbus/.env")
+
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
+CONFIG_URL = "https://telemetry-adaro.id/api/key/device_location/{}/config"
 API_KEY = "03e4e280-428a-402e-b00b-55f9851eeeb6"
-DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID"))
+DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", "1"))
 VERSION = "1.0.0"
 
 
 class RTU:
-    def __init__(self, config_file):
+    def __init__(self, config_file="config.json"):
         self.config = self.load_config(config_file)
-        print(self.config)
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
-        self.crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
-        self.flowmeter = Flowmeter(self.ser_ports, self.config)
-        self.wellpro = Wellpro(self.ser_ports, self.config)
-        self.display = Display()
+        self.wellpro = Wellproampere(self.ser_ports, self.config)
 
-        self.restart_requested = False
         self.report_requested = False
+        self.restart_requested = False
 
-    def load_config(self, _):
-        url = f"https://telemetry-adaro.id/api/key/device_location/{DEVICE_LOCATION_ID}/config"
+    def load_config(self, config_file):
+        url = CONFIG_URL.format(DEVICE_LOCATION_ID)
         headers = {
-            "X-API-KEY": f"{API_KEY}",
+            "X-API-KEY": API_KEY,
             "Accept": "application/json",
         }
         try:
-            response = requests.get(url, headers=headers, verify="cert.pem")
+            print(f"Ambil config dari API: {url}")
+            response = requests.get(url, headers=headers, verify="cert.pem", timeout=10)
             response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"Failed to load config from server: {e}")
-            sys.exit(1)
+            config = response.json()
+            print("Berhasil ambil config dari API")
+            return config
+        except Exception as e:
+            print(f"Gagal ambil config API, fallback ke file lokal: {e}")
+            try:
+                with open(config_file) as f:
+                    return json.load(f)
+            except Exception as e2:
+                print(f"Gagal load config lokal: {e2}")
+                sys.exit(1)
 
     def init_serial_ports(self):
         ports = {}
@@ -65,8 +65,9 @@ class RTU:
 
     def init_mqtt(self):
         conf = self.config["mqtt"]
-        print(conf)
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="")
+        client = mqtt.Client(
+            mqtt.CallbackAPIVersion.VERSION2, client_id=conf["client_id"]
+        )
         client.username_pw_set("raspberry", "raspberry12345")
         client.on_connect = self.on_connect
         client.on_message = self.on_message
@@ -74,230 +75,102 @@ class RTU:
         client.loop_start()
         return client
 
-    def send_telemetry(self, payload):
-        """Send sensor data to telemetry API"""
+    def on_connect(self, client, userdata, flags, reason_code, properties):
+        if reason_code == 0:
+            print("Connected to MQTT Broker")
+            client.subscribe(self.config["mqtt"]["command_topic"], qos=1)
+        else:
+            print(f"Failed to connect MQTT: {reason_code}")
 
+    def on_message(self, client, userdata, msg):
+        payload = msg.payload.decode().strip().lower()
+        print(f"Command MQTT diterima: {payload}")
+        if payload == "report":
+            self.report_requested = True
+        elif payload == "restart":
+            self.restart_requested = True
+
+    def send_telemetry(self, payload_api):
         try:
             headers = {
-                "X-API-KEY": f"{API_KEY}",
+                "X-API-KEY": API_KEY,
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             }
             response = requests.post(
-                TELEMETRY_URL, json=payload, headers=headers, verify=False
+                TELEMETRY_URL, json=payload_api, headers=headers, verify=False
             )
-
             if response.status_code == 200:
-                self.report_requested = False
-                print("Berhasil mengirim data ke API")
-                return True
+                print("Berhasil kirim data ke API")
             else:
-                print(response.status_code)
-                return False
-
+                print(f"Gagal kirim API: {response.status_code} {response.text}")
         except Exception as e:
-            return False
-
-    def on_connect(self, client, userdata, flags, reason_code, properties):
-        if reason_code == 0:
-            print("Connected to MQTT Broker!")
-            client.subscribe(self.config["mqtt"]["command_topic"], qos=1)
-        else:
-            print(f"Failed to connect to MQTT, reason code: {reason_code}")
-
-    def on_message(self, client, userdata, msg):
-        if msg.topic == self.config["mqtt"]["command_topic"]:
-            payload = msg.payload.decode().strip().lower()
-            if payload == "restart":
-                print("\nReceived restart command via MQTT")
-                self.restart_requested = True
-            elif payload == "report":
-                self.report_requested = True
-
-    def graceful_shutdown(self):
-        print("\nPerforming graceful shutdown...")
-        for port in self.ser_ports.values():
-            port.close()
-        self.mqtt_client.disconnect()
-        print("All resources cleaned up")
-
-    def restart_application(self):
-        self.graceful_shutdown()
-        print("\nRestarting application...")
-        python = sys.executable
+            print(f"Error kirim API: {e}")
 
     def monitor_all_devices(self):
-        current_page = 0
-        last_change = time.time()
-        try:
-            while not self.restart_requested:
-                now = time.time()
-                time_left = 20 - int(now - last_change)
+        while not self.restart_requested:
+            payload_mqtt = {
+                "timestamp": time.time(),
+                "timestamp_humanize": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "device_location_id": DEVICE_LOCATION_ID,
+                "sensors": [],
+                "version": VERSION,
+            }
 
-                payload = {
-                    "timestamp": time.time(),
-                    "timestamp_humanize": datetime.fromtimestamp(time.time()).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
-                    "device_location_id": DEVICE_LOCATION_ID,
-                    "sensors": [],
-                    "version": VERSION,
-                }
+            payload_api = {
+                "device_location_id": DEVICE_LOCATION_ID,
+                "ph": 0.0,
+                "tds": 0.0,
+                "tss": 0.0,
+                "curah_hujan": 0,
+                "arah_angin": 0,
+                "kecepatan_angin": 0,
+            }
 
-                payload_api = {
-                    "device_location_id": DEVICE_LOCATION_ID,
-                    "ph": 0.0,
-                    "tds": 0.0,
-                    "debit": 0.0,
-                    "rainfall": 0.0,
-                    "water_height": 0.0,
-                    "temperature": 0.0,
-                    "humidity": 0.0,
-                    "wind_direction": 0.0,
-                    "wind_speed": 0.0,
-                    "solar_radiation": 0.0,
-                    "evaporation": 0.0,
-                    "dissolve_oxygen": 0.0,
-                    "velocity": 0.0,
-                    "water_volume": 0.0,
-                }
+            for device in self.config["devices"]:
+                port = device["port"]
+                for sensor in device["sensors"]:
+                    value = None
+                    if sensor["type"] == "4-20mA":
+                        value = self.wellpro.read_analog(sensor, port)
+                    elif sensor["type"] == "digital_in":
+                        value = self.wellpro.read_digital_inputs(sensor, port)
 
-                # Baca semua sensor terlebih dahulu
-                for device in self.config["devices"]:
-                    device_port = device["port"]
-                    for sensor in device["sensors"]:
-                        value = None
-
-                        # Membaca nilai sensor
-                        if (
-                            device["type"] == "analog_io"
-                            and device["name"] == "Wellpro"
-                        ):
-                            value = self.wellpro.read_analog(sensor, device_port)
-                            # elif device["type"] == "digital_io":
-                            # if sensor["type"] == "digital_in":
-                            # value = self.read_digital_input(sensor)
-                        elif (
-                            device["type"] == "direct_rs485"
-                            and device["name"].lower() == "flowmeter"
-                        ):
-                            value = self.flowmeter.read_rs485_direct(
-                                sensor, device_port
-                            )
-
-                        # Membuat entri data sensor
-                        sensor_data = {
-                            sensor["name"]: {
-                                "sensor_type": sensor["type"],
-                                "unit": sensor["conversion"].get("unit", ""),
-                            }
+                    sensor_data = {
+                        sensor["name"]: {
+                            "sensor_type": sensor["type"],
+                            "unit": sensor.get("conversion", {}).get("unit", ""),
+                            "value": value,
+                            "status": "OK" if value is not None else "ERROR",
                         }
-                        print("============================")
-                        print(sensor)
-                        print("==============================")
+                    }
+                    payload_mqtt["sensors"].append(sensor_data)
 
-                        if value is not None and value >= 0:
-                            payload_api[sensor["name"]] = round(float(value), 2)
-                            sensor_data[sensor["name"]]["value"] = round(
-                                float(value), 2
-                            )
-                            sensor_data[sensor["name"]]["status"] = "OK"
+                    if value is not None and sensor["name"] in payload_api:
+                        payload_api[sensor["name"]] = (
+                            float(value)
+                            if isinstance(value, (int, float))
+                            else int(value)
+                        )
 
-                            print("============================")
-                            print(sensor_data)
-                            print("==============================")
-                            # Untuk API Telemetry, kita masukkan ke payload_api jika nama sesuai
-                            # Misal: sensor name "Instantaneous Flow" -> debit
-                            if sensor["name"] == "debit":
-                                payload_api["debit"] = round(float(value), 2)
-                                sensor_data[sensor["name"]]["value"] = round(
-                                    float(value), 2
-                                )
-                            elif sensor["name"] == "water_height":
-                                # Jangan dihapus komentar ini
-                                # 65535 angka tinggi  maksimal
-                                # 4000 = tinggi penampan dan tinggi letak sensor
-                                # 4000 = 2600 + 1400 dalam milimeter
-                                # size2 kemiringan karna trapezoid
-                                # value = 4000 - (65535 - value)
-                                penampang_bawah = device["section_parameters"]["size1"]
-                                penampang_atas = device["section_parameters"]["size3"]
-                                # value = (65535 - value) - (
-                                #    penampang_bawah + penampang_atas
-                                # )
-                                payload_api["water_height"] = round(float(value), 2)
-                                sensor_data[sensor["name"]]["value"] = round(
-                                    float(value), 2
-                                )
-                            elif sensor["name"] == "water_volume":
-                                payload_api["water_volume"] = round(float(value), 2)
-                                sensor_data[sensor["name"]]["value"] = round(
-                                    float(value), 2
-                                )
-                            elif sensor["name"] == "velocity":
-                                payload_api["velocity"] = round(float(value), 2)
-                                sensor_data[sensor["name"]]["value"] = round(
-                                    float(value), 2
-                                )
-                        else:
-                            sensor_data[sensor["name"]]["value"] = None
-                            sensor_data[sensor["name"]]["error"] = (
-                                "Gagal membaca sensor"
-                            )
-                            sensor_data[sensor["name"]]["status"] = "ERROR"
+            # Publish ke MQTT
+            topic = self.config["mqtt"]["base_topic"]
+            self.mqtt_client.publish(
+                topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]
+            )
+            print("MQTT Payload:", payload_mqtt)
 
-                        payload["sensors"].append(sensor_data)
-                        time.sleep(0.2)
-
-                # Publish semua data sekaligus
-                print(payload)
-                if payload["sensors"]:
-                    page_count = (len(payload["sensors"]) + 5) // 6
-
-                    print("****************************************")
-                    print(payload["sensors"])
-                    print("****************************************")
-                    self.display.display_sensor_page(
-                        payload["sensors"], current_page, time_left
-                    )
-
-                    if now - last_change >= 20:
-                        last_change = now
-                        current_page = (current_page + 1) % page_count
-
-                    topic = f"{self.config['mqtt']['base_topic']}"
-                    self.mqtt_client.publish(
-                        topic, json.dumps(payload), qos=self.config["mqtt"]["qos"]
-                    )
-
-                if self.report_requested:
-                    print("report diterima")
-                else:
-                    print("report belum diterima")
-
-                if self.report_requested:
-                    print("======================================================")
-                    print(payload_api)
-                    print("======================================================")
-                    self.send_telemetry(payload_api)
-
-                time.sleep(2)
+            # Kirim ke API jika ada perintah report
+            if self.report_requested:
+                print("Command report diterima → kirim API...")
+                self.send_telemetry(payload_api)
+                self.report_requested = False
 
             time.sleep(5)
 
-            if self.restart_requested:
-                self.restart_application()
-
-        except KeyboardInterrupt:
-            self.display.cleanup()
-            self.graceful_shutdown()
-            print("\nAplikasi dihentikan oleh pengguna")
-
-        except Exception as e:
-            print(f"Error kritis: {str(e)}")
-            self.restart_application()
+        print("Restart requested, keluar loop")
 
 
 if __name__ == "__main__":
-    gateway = RTU(None)
+    gateway = RTU("config.json")
     gateway.monitor_all_devices()

@@ -25,9 +25,7 @@ def read_analog_channels():
         print("=============raw")
         print(raw)
         print("=============raw")
-        current = (raw * 20) / 4095
-        nilai_ph = (current - 4) * (14 - 1) / (20 - 4) + 1
-        currents.append(round(nilai_ph, 3))
+        currents.append(round(current, 3))
     return currents
 
 

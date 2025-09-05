@@ -55,6 +55,7 @@ if __name__ == "__main__":
         bytesize=8,
         parity="N",
         timeout=1,
+        unit_id=1,
     )
 
     if client.connect():

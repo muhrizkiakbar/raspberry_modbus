@@ -26,7 +26,7 @@ def read_sensor_data(client, unit_id=1):
 
 def set_section_config(client, unit_id, section_type, size1=0, size2=0, size3=0):
     # Section type
-    res = client.write_register(address=0x0412, value=section_type, unit=unit_id)
+    res = client.write_register(address=0x0412, value=section_type)
     if res.isError():
         print("❌ Gagal set section type")
         return False

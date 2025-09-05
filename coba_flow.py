@@ -41,7 +41,7 @@ def read_sensor_data():
         # Water Level (0x03EB = 1003)
         # water_level = instrument.read_register(1003, 0, functioncode=3)
         # data["water_level_mm"] = 65535 - water_level
-        water_level = read_depth()
+        data["water_level_mm"] = read_depth()
     except Exception as e:
         print("❌ Gagal baca Water Level:", e)
 

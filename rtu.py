@@ -172,9 +172,13 @@ class RTU:
 
             # Kirim ke API jika ada perintah report
             if self.report_requested:
+                print("==================== REPORTING ==============================")
                 print("Command report diterima → kirim API...")
                 self.send_telemetry(payload_api)
                 self.report_requested = False
+                print(
+                    "==================== END REPORTING =============================="
+                )
 
             time.sleep(5)
 

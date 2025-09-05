@@ -76,12 +76,12 @@ if __name__ == "__main__":
     print("✅ Terhubung ke sensor RS-RAD-N01-3")
 
     # --- BACA SENSOR ---
-    sensor_data = read_sensor_data()
-    print("📡 Data Sensor:", sensor_data)
-
     # --- KONFIGURASI PENAMPANG ---
     # Contoh Trapezoid (tinggi=2000mm, lereng=500mm, dasar=1000mm)
-    set_section_config(section_type=1, size1=2000, size2=500, size3=1000)
+    # set_section_config(section_type=1, size1=2000, size2=500, size3=1000)
 
     # Contoh Rectangle (tinggi=200mm, dasar=450mm)
     set_section_config(section_type=2, size1=200, size3=450)
+
+    sensor_data = read_sensor_data()
+    print("📡 Data Sensor:", sensor_data)

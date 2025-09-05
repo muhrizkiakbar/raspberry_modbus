@@ -9,14 +9,39 @@ instrument.serial.stopbits = 1
 instrument.serial.timeout = 1
 
 
+def read_depth():
+    """Baca jarak sensor->permukaan air & hitung kedalaman air dari dasar"""
+    try:
+        # Register 1003 = current water level (distance sensor→air, mm)
+        distance_mm = instrument.read_register(1003, 0, functioncode=3)
+
+        # Register 1043 = channel height (sensor→dasar, mm)
+        channel_height_mm = instrument.read_register(1043, 0, functioncode=3)
+
+        # Hitung kedalaman
+        depth_mm = max(channel_height_mm - distance_mm, 0)
+
+        return {
+            "distance_mm": distance_mm,
+            "channel_height_mm": channel_height_mm,
+            "depth_mm": depth_mm,
+            "depth_cm": depth_mm / 10.0,
+            "depth_m": depth_mm / 1000.0,
+        }
+    except Exception as e:
+        print("❌ Error baca depth:", e)
+        return None
+
+
 def read_sensor_data():
     """Baca water level, velocity, dan flow dari sensor"""
     data = {}
 
     try:
         # Water Level (0x03EB = 1003)
-        water_level = instrument.read_register(1003, 0, functioncode=3)
-        data["water_level_mm"] = 65535 - water_level
+        # water_level = instrument.read_register(1003, 0, functioncode=3)
+        # data["water_level_mm"] = 65535 - water_level
+        water_level = read_depth()
     except Exception as e:
         print("❌ Gagal baca Water Level:", e)
 

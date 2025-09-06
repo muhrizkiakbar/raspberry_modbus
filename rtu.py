@@ -9,7 +9,7 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 from modbusampere import Modbusampere
-from display import Display
+# from display import Display
 
 load_dotenv("/home/ftp/modbus/.env")
 

@@ -223,12 +223,11 @@ class RTU:
                     elif sensor["type"] == "digital_in":
                         value = self.modbusampere.read_digital_inputs(sensor, port)
 
-                    if value is None:
-                        print("=========================== Value Error")
-                        print("device")
-                        print("sensor")
-                        print(value)
-                        print("=========================== End Value Error")
+                    print("=========================== Value Error")
+                    print("device")
+                    print("sensor")
+                    print(value)
+                    print("=========================== End Value Error")
                     sensor_data = {
                         sensor["name"]: {
                             "sensor_type": sensor["type"],

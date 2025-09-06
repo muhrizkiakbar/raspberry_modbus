@@ -28,7 +28,7 @@ class RTU:
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
         self.modbusampere = Modbusampere(self.ser_ports, self.config)
-        self.display = Display()
+        # self.display = Display()
 
         self.report_requested = False
         self.restart_requested = False
@@ -241,9 +241,9 @@ class RTU:
                 print("****************************************")
                 print(payload_mqtt["sensors"])
                 print("****************************************")
-                self.display.display_sensor_page(
-                    payload_mqtt["sensors"], current_page, time_left
-                )
+                # self.display.display_sensor_page(
+                #    payload_mqtt["sensors"], current_page, time_left
+                # )
 
                 if now - last_change >= 20:
                     last_change = now

@@ -23,7 +23,7 @@ def read_analog_channels():
         # Konversi sesuai manual: I = DATA * 20 / 4095 (mA)
         current = raw * 20.0 / 4095.0
         current_ma = raw * 20.0 / 4095.0
-        scaled = (current_ma - 4) / (20 - 4) * (14 - conv["output_min"]) + 1
+        scaled = (current_ma - 4) / (20 - 4) * (14 - 1) + 1
         print("=============raw")
         print(scaled)
         print("=============raw")

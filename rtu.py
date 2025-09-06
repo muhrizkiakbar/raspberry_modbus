@@ -213,7 +213,9 @@ class RTU:
                 print(device)
                 port = device["port"]
                 for sensor in device["sensors"]:
-                    print("==================== Sensor =================")
+                    print(
+                        "                    ==================== Sensor ================="
+                    )
                     print(sensor)
                     value = None
                     if (
@@ -246,7 +248,9 @@ class RTU:
                             if isinstance(value, (int, float))
                             else int(value)
                         )
-                    print("==================== End Sensor =================")
+                    print(
+                        "                    ==================== End Sensor ================="
+                    )
                 print("==================== End Device =================")
 
             # Publish ke MQTT

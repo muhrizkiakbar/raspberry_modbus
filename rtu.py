@@ -209,8 +209,12 @@ class RTU:
             }
 
             for device in self.config["devices"]:
+                print("==================== Device =================")
+                print(device)
                 port = device["port"]
                 for sensor in device["sensors"]:
+                    print("==================== Sensor =================")
+                    print(sensor)
                     value = None
                     if (
                         sensor["type"] == "4-20mA"
@@ -220,10 +224,6 @@ class RTU:
                     elif sensor["type"] == "digital_in":
                         value = self.modbusampere.read_digital_inputs(sensor, port)
 
-                    if value is None:
-                        print("===========================")
-                        print(device)
-                        print("===========================")
                     sensor_data = {
                         sensor["name"]: {
                             "sensor_type": sensor["type"],
@@ -240,6 +240,8 @@ class RTU:
                             if isinstance(value, (int, float))
                             else int(value)
                         )
+                    print("==================== End Sensor =================")
+                print("==================== End Device =================")
 
             # Publish ke MQTT
             # if payload_mqtt["sensors"]:
@@ -283,5 +285,5 @@ class RTU:
 
 
 if __name__ == "__main__":
-    gateway = RTU("config.json")
+    gateway = RTU(None)
     gateway.monitor_all_devices()

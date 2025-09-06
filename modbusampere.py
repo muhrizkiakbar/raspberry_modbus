@@ -7,6 +7,9 @@ class Modbusampere:
         self.ser_ports = ser_ports
         self.config = config
         self.instruments = {}
+        print("==================================")
+        print(config)
+        print("==================================")
 
         for device in config["devices"]:
             if "Wellpro" in device["name"]:
@@ -29,9 +32,6 @@ class Modbusampere:
         slave_addr = sensor["slave_address"]
         channel = sensor["channel"]
         key = f"{port}_{slave_addr}"
-        print("==================================")
-        print(self.instruments)
-        print("==================================")
         instr = self.instruments[key]
         try:
             values = instr.read_registers(0, 6, functioncode=3)

@@ -1,21 +1,25 @@
 import serial
-import crcmod
 import json
 import time
-import struct
 import paho.mqtt.client as mqtt
 import os
 import sys
+import subprocess
 from datetime import datetime
 import requests
 from dotenv import load_dotenv
-import os
-
+from modbusampere import Modbusampere
+from display import Display
 
 load_dotenv("/home/ftp/modbus/.env")
+
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
-API_KEY = "43fc6317-b9e7-4b5a-859c-a575d7e03fd6"
-DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID"))
+CONFIG_URL = "https://telemetry-adaro.id/api/key/device_location/{}/config"
+DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
+API_KEY = str(os.getenv("API_KEY", ""))
+MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
+MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
+VERSION = "1.0.6"
 
 
 class RTU:
@@ -23,23 +27,34 @@ class RTU:
         self.config = self.load_config(config_file)
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
-        self.crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
-        self.restart_requested = False
-        self.report_requested = False
+        self.modbusampere = Modbusampere(self.ser_ports, self.config)
+        self.display = Display()
 
-    def load_config(self, _):
-        url = f"https://telemetry-adaro.id/api/key/device_location/{DEVICE_LOCATION_ID}/config"
+        self.report_requested = False
+        self.restart_requested = False
+        self.update_requested = False
+
+    def load_config(self, config_file):
+        url = CONFIG_URL.format(DEVICE_LOCATION_ID)
         headers = {
-            "X-API-KEY": f"{API_KEY}",
+            "X-API-KEY": API_KEY,
             "Accept": "application/json",
         }
         try:
-            response = requests.get(url, headers=headers, verify=False)
+            print(f"Ambil config dari API: {url}")
+            response = requests.get(url, headers=headers, verify="cert.pem", timeout=10)
             response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"Failed to load config from server: {e}")
-            sys.exit(1)
+            config = response.json()
+            print("Berhasil ambil config dari API")
+            return config
+        except Exception as e:
+            print(f"Gagal ambil config API, fallback ke file lokal: {e}")
+            try:
+                with open(config_file) as f:
+                    return json.load(f)
+            except Exception as e2:
+                print(f"Gagal load config lokal: {e2}")
+                sys.exit(1)
 
     def init_serial_ports(self):
         ports = {}
@@ -56,168 +71,211 @@ class RTU:
 
     def init_mqtt(self):
         conf = self.config["mqtt"]
-        print(conf)
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="")
-        client.username_pw_set("belerang", "Gj8Q4sOQ%LFA6#belerang")
+        client = mqtt.Client(
+            mqtt.CallbackAPIVersion.VERSION2, client_id=conf["client_id"]
+        )
+        client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
         client.on_connect = self.on_connect
         client.on_message = self.on_message
         client.connect(conf["broker"], conf["port"])
         client.loop_start()
         return client
 
-    def send_telemetry(self, payload):
-        """Send sensor data to telemetry API"""
+    def on_connect(self, client, userdata, flags, reason_code, properties):
+        if reason_code == 0:
+            print("Connected to MQTT Broker")
+            client.subscribe(self.config["mqtt"]["command_topic"], qos=1)
+        else:
+            print(f"Failed to connect MQTT: {reason_code}")
 
+    def on_message(self, client, userdata, msg):
+        payload = msg.payload.decode().strip().lower()
+        print(f"Command MQTT diterima: {payload}")
+        if payload == "report":
+            self.report_requested = True
+        elif payload == "restart":
+            self.restart_requested = True
+        elif payload == "update":
+            self.update_requested = True
+
+    def send_telemetry(self, payload_api):
         try:
             headers = {
-                "X-API-KEY": f"{API_KEY}",
+                "X-API-KEY": API_KEY,
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             }
             response = requests.post(
-                TELEMETRY_URL, json=payload, headers=headers, verify=False
+                TELEMETRY_URL, json=payload_api, headers=headers, verify=False
             )
-
             if response.status_code == 200:
-                self.report_requested = False
-                print("Berhasil mengirim data ke API")
-                return True
+                print("Berhasil kirim data ke API")
             else:
-                print(response.status_code)
-                return False
-
+                print(f"Gagal kirim API: {response.status_code} {response.text}")
         except Exception as e:
-            return False
-
-    def on_connect(self, client, userdata, flags, reason_code, properties):
-        if reason_code == 0:
-            print("Connected to MQTT Broker!")
-            client.subscribe(self.config["mqtt"]["command_topic"], qos=1)
-        else:
-            print(f"Failed to connect to MQTT, reason code: {reason_code}")
-
-    def on_message(self, client, userdata, msg):
-        if msg.topic == self.config["mqtt"]["command_topic"]:
-            payload = msg.payload.decode().strip().lower()
-            if payload == "restart":
-                print("\nReceived restart command via MQTT")
-                self.restart_requested = True
-            elif payload == "report":
-                self.report_requested = True
-
-    def graceful_shutdown(self):
-        print("\nPerforming graceful shutdown...")
-        for port in self.ser_ports.values():
-            port.close()
-        self.mqtt_client.disconnect()
-        print("All resources cleaned up")
-
-    def restart_application(self):
-        self.graceful_shutdown()
-        print("\nRestarting application...")
-        python = sys.executable
+            print(f"Error kirim API: {e}")
 
     def monitor_all_devices(self):
-        try:
-            while not self.restart_requested:
-                payload = {
-                    "timestamp": time.time(),
-                    "timestamp_humanize": datetime.fromtimestamp(time.time()).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
-                    "device_location_id": DEVICE_LOCATION_ID,
-                    "sensors": [],
-                }
-
-                payload_api = {
-                    "device_location_id": DEVICE_LOCATION_ID,
-                    "ph": 0.0,
-                    "tds": 0.0,
-                    "debit": 0.0,
-                    "rainfall": 0.0,
-                    "water_height": 0.0,
-                    "temperature": 0.0,
-                    "humidity": 0.0,
-                    "wind_direction": 0.0,
-                    "wind_speed": 0.0,
-                    "solar_radiation": 0.0,
-                    "evaporation": 0.0,
-                    "dissolve_oxygen": 0.0,
-                    "velocity": 0.0,
-                    "water_volume": 0.0,
-                }
-
-                # Baca semua sensor terlebih dahulu
-                for device in self.config["devices"]:
-                    device_port = device["port"]
-
-                    for sensor in device["sensors"]:
-                        value = None
-
-                        # Membaca nilai sensor
-                        if device["type"] == "analog_io":
-                            value = self.read_analog(device_port, sensor)
-                        elif device["type"] == "digital_io":
-                            if sensor["type"] == "digital_in":
-                                value = self.read_digital_input(sensor)
-                        elif device["type"] == "direct_rs485":
-                            value = self.read_rs485_direct(sensor)
-
-                        # Membuat entri data sensor
-                        sensor_data = {
-                            sensor["name"]: {
-                                "sensor_type": sensor["type"],
-                                "unit": sensor["conversion"].get("unit", ""),
-                            }
-                        }
-
-                        if value is not None and value >= 0:
-                            payload_api[sensor["name"]] = float(value)
-                            sensor_data[sensor["name"]]["value"] = float(value)
-                            sensor_data[sensor["name"]]["status"] = "OK"
-                        else:
-                            sensor_data[sensor["name"]]["value"] = None
-                            sensor_data[sensor["name"]]["error"] = (
-                                "Gagal membaca sensor"
-                            )
-                            sensor_data[sensor["name"]]["status"] = "ERROR"
-
-                        payload["sensors"].append(sensor_data)
-                        time.sleep(0.2)
-
-                # Publish semua data sekaligus
-                print(payload)
-                if payload["sensors"]:
-                    topic = f"{self.config['mqtt']['base_topic']}"
-                    self.mqtt_client.publish(
-                        topic, json.dumps(payload), qos=self.config["mqtt"]["qos"]
+        current_page = 0
+        last_change = time.time()
+        while not self.restart_requested:
+            now = time.time()
+            time_left = 20 - int(now - last_change)
+            if self.update_requested:
+                print("==================== UPDATING ==============================")
+                try:
+                    print("Menjalankan git pull origin master...")
+                    result = subprocess.run(
+                        ["git", "pull", "origin", "master"],
+                        capture_output=True,
+                        text=True,
                     )
+                    print(result.stdout)
+                    if result.returncode == 0:
+                        print("Git pull berhasil")
 
-                if self.report_requested:
-                    print("report diterima")
-                else:
-                    print("report belum diterima")
+                        # Install package apt
+                        # print("Menjalankan sudo apt install hello -y...")
+                        # apt_result = subprocess.run(
+                        #    ["sudo", "apt", "install", "hello", "-y"],
+                        #    capture_output=True,
+                        #    text=True,
+                        # )
+                        # if apt_result.returncode == 0:
+                        #    print("Package hello berhasil diinstall")
+                        # else:
+                        #    print("Gagal install package hello:", apt_result.stderr)
 
-                if self.report_requested:
-                    print("======================================================")
-                    print(payload_api)
-                    print("======================================================")
-                    self.send_telemetry(payload_api)
+                        # Install package pip
+                        # pip_package = "somepackage"  # ganti sesuai kebutuhan
+                        # print(
+                        #    f"Menjalankan pip install {pip_package} --break-system-packages..."
+                        # )
+                        # pip_result = subprocess.run(
+                        #    ["pip", "install", pip_package, "--break-system-packages"],
+                        #    capture_output=True,
+                        #    text=True,
+                        # )
+                        # if pip_result.returncode == 0:
+                        #    print(f"Package {pip_package} berhasil diinstall via pip")
+                        # else:
+                        #    print(
+                        #        f"Gagal install package {pip_package} via pip:",
+                        #        pip_result.stderr,
+                        #    )
 
-                time.sleep(2)
+                        # Restart service modbus
+                        print("Restart service modbus...")
+                        subprocess.run(
+                            ["sudo", "systemctl", "restart", "modbus"], check=True
+                        )
+                        print("Service modbus berhasil direstart")
+                        break  # keluar loop agar service restart sempurna
+                    else:
+                        print("Git pull gagal:", result.stderr)
+                except Exception as e:
+                    print("Error saat update:", e)
+                finally:
+                    self.update_requested = False
+                print(
+                    "==================== END UPDATING =============================="
+                )
+
+            payload_mqtt = {
+                "timestamp": time.time(),
+                "timestamp_humanize": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "device_location_id": DEVICE_LOCATION_ID,
+                "sensors": [],
+                "version": VERSION,
+            }
+
+            payload_api = {
+                "device_location_id": DEVICE_LOCATION_ID,
+                "ph": 0.0,
+                "tds": 0.0,
+                "debit": 0.0,
+                "rainfall": 0.0,
+                "water_height": 0.0,
+                "temperature": 0.0,
+                "humidity": 0.0,
+                "wind_direction": 0.0,
+                "wind_speed": 0.0,
+                "solar_radiation": 0.0,
+                "evaporation": 0.0,
+                "dissolve_oxygen": 0.0,
+                "velocity": 0.0,
+                "water_volume": 0.0,
+            }
+
+            for device in self.config["devices"]:
+                print("==================== Device =================")
+                print(device)
+                port = device["port"]
+                for sensor in device["sensors"]:
+                    print(
+                        "                    ==================== Sensor ================="
+                    )
+                    print(sensor)
+                    value = None
+                    if sensor["type"] == "4-20mA":
+                        value = self.modbusampere.read_analog(sensor, port)
+                    elif sensor["type"] == "digital_in":
+                        value = self.modbusampere.read_digital_inputs(sensor, port)
+
+                    sensor_data = {
+                        sensor["name"]: {
+                            "sensor_type": sensor["type"],
+                            "unit": sensor.get("conversion", {}).get("unit", ""),
+                            "value": value,
+                            "status": "OK" if value is not None else "error",
+                        }
+                    }
+                    payload_mqtt["sensors"].append(sensor_data)
+
+                    if value is not None and sensor["name"] in payload_api:
+                        payload_api[sensor["name"]] = (
+                            round(float(value), 1)
+                            if isinstance(value, (int, float))
+                            else int(value)
+                        )
+                    print(
+                        "                    ==================== End Sensor ================="
+                    )
+                print("==================== End Device =================")
+
+            print(payload_mqtt)
+            if payload_mqtt["sensors"]:
+                page_count = (len(payload_mqtt["sensors"]) + 5) // 6
+
+                print("****************************************")
+                print(payload_mqtt["sensors"])
+                print("****************************************")
+                self.display.display_sensor_page(
+                    payload_mqtt["sensors"], current_page, time_left
+                )
+
+                if now - last_change >= 20:
+                    last_change = now
+                    current_page = (current_page + 1) % page_count
+
+                topic = f"{self.config['mqtt']['base_topic']}"
+                self.mqtt_client.publish(
+                    topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]
+                )
+
+            # Kirim ke API jika ada perintah report
+            if self.report_requested:
+                print("==================== REPORTING ==============================")
+                print("Command report diterima → kirim API...")
+                self.send_telemetry(payload_api)
+                self.report_requested = False
+                print(
+                    "==================== END REPORTING =============================="
+                )
 
             time.sleep(5)
 
-            if self.restart_requested:
-                self.restart_application()
-
-        except KeyboardInterrupt:
-            self.graceful_shutdown()
-            print("\nAplikasi dihentikan oleh pengguna")
-
-        except Exception as e:
-            print(f"Error kritis: {str(e)}")
-            self.restart_application()
+        print("Restart requested, keluar loop")
 
 
 if __name__ == "__main__":

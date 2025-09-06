@@ -223,11 +223,6 @@ class RTU:
                     elif sensor["type"] == "digital_in":
                         value = self.modbusampere.read_digital_inputs(sensor, port)
 
-                    print("=========================== Value Error")
-                    print("device")
-                    print("sensor")
-                    print(value)
-                    print("=========================== End Value Error")
                     sensor_data = {
                         sensor["name"]: {
                             "sensor_type": sensor["type"],
@@ -266,10 +261,11 @@ class RTU:
             #    )
             #    print("MQTT Payload:", payload_mqtt)
 
-            print("======================================")
-            print(payload_mqtt)
-            print("======================================")
-
+            print("=========================== Value Error")
+            print("device")
+            print("sensor")
+            print(payload_mqtt["sensors"])
+            print("=========================== End Value Error")
             topic = self.config["mqtt"]["base_topic"]
             self.mqtt_client.publish(
                 topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]

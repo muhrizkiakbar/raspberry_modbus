@@ -212,6 +212,10 @@ class RTU:
                 port = device["port"]
                 for sensor in device["sensors"]:
                     value = None
+                    print("=========================================")
+                    print(sensor["name"])
+                    print(sensor["type"])
+                    print("=========================================")
                     if sensor["type"] == "4-20mA" and sensor["name"] == "modbusampere":
                         value = self.modbusampere.read_analog(sensor, port)
                     elif sensor["type"] == "digital_in":

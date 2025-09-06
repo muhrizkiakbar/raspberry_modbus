@@ -213,6 +213,7 @@ class RTU:
                 for sensor in device["sensors"]:
                     value = None
                     print("=========================================")
+                    print(device["name"])
                     print(sensor["name"])
                     print(sensor["type"])
                     print("=========================================")

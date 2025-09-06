@@ -7,20 +7,13 @@ class Modbusampere:
         self.ser_ports = ser_ports
         self.config = config
         self.instruments = {}
-        print("==================================")
-        print(config["devices"])
-        print("==================================")
 
         for device in config["devices"]:
-            if "Wellpro" in device["name"]:
+            if "modbusampere" in device["name"].lower():
                 port = device["port"]
                 for sensor in device["sensors"]:
                     slave_addr = sensor["slave_address"]
                     key = f"{port}_{slave_addr}"
-                    print("==================================")
-                    print("key")
-                    print(key)
-                    print("==================================")
                     if key not in self.instruments:
                         instr = minimalmodbus.Instrument(port, slave_addr)
                         instr.serial.baudrate = ser_ports[port].baudrate

@@ -29,6 +29,9 @@ class Modbusampere:
         slave_addr = sensor["slave_address"]
         channel = sensor["channel"]
         key = f"{port}_{slave_addr}"
+        print("==================================")
+        print(self.instruments)
+        print("==================================")
         instr = self.instruments[key]
         try:
             values = instr.read_registers(0, 6, functioncode=3)

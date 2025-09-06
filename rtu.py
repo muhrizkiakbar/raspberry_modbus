@@ -258,6 +258,10 @@ class RTU:
             #    )
             #    print("MQTT Payload:", payload_mqtt)
 
+            print("======================================")
+            print(payload_mqtt)
+            print("======================================")
+
             topic = self.config["mqtt"]["base_topic"]
             self.mqtt_client.publish(
                 topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]

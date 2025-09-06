@@ -8,7 +8,7 @@ class Modbusampere:
         self.config = config
         self.instruments = {}
         print("==================================")
-        print(config)
+        print(config["devices"])
         print("==================================")
 
         for device in config["devices"]:

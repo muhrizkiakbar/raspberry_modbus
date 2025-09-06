@@ -220,7 +220,7 @@ class RTU:
                         sensor["name"]: {
                             "sensor_type": sensor["type"],
                             "unit": sensor.get("conversion", {}).get("unit", ""),
-                            "value": round(float(value), 1),
+                            "value": round(value, 1),
                             "status": "OK" if value is not None else "error",
                         }
                     }
@@ -228,7 +228,7 @@ class RTU:
 
                     if value is not None and sensor["name"] in payload_api:
                         payload_api[sensor["name"]] = (
-                            round(float(value), 1)
+                            round(value, 1)
                             if isinstance(value, (int, float))
                             else int(value)
                         )

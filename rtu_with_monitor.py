@@ -19,7 +19,7 @@ DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
 API_KEY = str(os.getenv("API_KEY", ""))
 MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
 MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
-VERSION = "1.0.7"
+VERSION = "1.0.8"
 
 
 class RTU:
@@ -193,6 +193,7 @@ class RTU:
                 "device_location_id": DEVICE_LOCATION_ID,
                 "ph": 0.0,
                 "tds": 0.0,
+                "tss": 0.0,
                 "debit": 0.0,
                 "rainfall": 0.0,
                 "water_height": 0.0,

@@ -187,6 +187,7 @@ class RTU:
                 "device_location_id": DEVICE_LOCATION_ID,
                 "ph": 0.0,
                 "tds": 0.0,
+                "tss": 0.0,
                 "debit": 0.0,
                 "rainfall": 0.0,
                 "water_height": 0.0,

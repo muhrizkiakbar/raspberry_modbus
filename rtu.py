@@ -16,17 +16,12 @@ load_dotenv("/home/ftp/modbus/.env")
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
 CONFIG_URL = "https://telemetry-adaro.id/api/key/device_location/{}/config"
 
-DEVICE_LOCATION_ID = 20
-API_KEY = "03e4e280-428a-402e-b00b-55f9851eeeb6"
-MQTT_USERNAME = "raspberry"
-MQTT_PASSWORD = "raspberry12345"
+DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
+API_KEY = str(os.getenv("API_KEY", ""))
+MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
+MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
 
-# DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
-# API_KEY = str(os.getenv("API_KEY", ""))
-# MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
-# MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
-
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 
 class RTU:

@@ -40,6 +40,9 @@ class Flowmeter:
         """Baca semua data sensor"""
         instr = self.instruments[self.last_key]
 
+        print("========================= SENSOR ================================")
+        print(sensor)
+
         if sensor == "water_height":
             try:
                 # Register 1003 = current water level (permukaan air→dasar penampang, mm)

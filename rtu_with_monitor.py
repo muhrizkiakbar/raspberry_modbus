@@ -124,7 +124,6 @@ class RTU:
             now = time.time()
             time_left = 20 - int(now - last_change)
             if self.update_requested:
-                print("==================== UPDATING ==============================")
                 try:
                     print("Menjalankan git pull origin master...")
                     result = subprocess.run(
@@ -179,9 +178,6 @@ class RTU:
                     print("Error saat update:", e)
                 finally:
                     self.update_requested = False
-                print(
-                    "==================== END UPDATING =============================="
-                )
 
             payload_mqtt = {
                 "timestamp": time.time(),

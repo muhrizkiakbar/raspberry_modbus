@@ -1,7 +1,7 @@
 import minimalmodbus
 
 # Inisialisasi RS485 Modbus RTU
-instrument = minimalmodbus.Instrument("/dev/ttyUSB1", 1)  # (port, slave address)
+instrument = minimalmodbus.Instrument("/dev/ttyUSB0", 1)  # (port, slave address)
 instrument.serial.baudrate = 4800  # sesuaikan dengan sensor (default bisa 4800/9600)
 instrument.serial.bytesize = 8
 instrument.serial.parity = "N"
@@ -19,10 +19,10 @@ def read_depth():
         channel_height_mm = instrument.read_register(1043, 0, functioncode=3)
 
         # Hitung kedalaman
-        # depth_mm = max(channel_height_mm - distance_mm, 0)
+        depth_mm = max(channel_height_mm - distance_mm, 0)
         # depth_mm = 65535 - (distance_mm - channel_height_mm)
         # depth_mm = channel_height_mm - distance_mm
-        depth_mm = 65535 - (distance_mm + channel_height_mm + 100)
+        # depth_mm = 65535 - (distance_mm + channel_height_mm + 100)
 
         return {
             "distance_mm": distance_mm,
@@ -103,13 +103,8 @@ def set_section_config(section_type, size1=0, size2=0, size3=0):
 if __name__ == "__main__":
     print("✅ Terhubung ke sensor RS-RAD-N01-3")
 
-    # --- BACA SENSOR ---
-    # --- KONFIGURASI PENAMPANG ---
-    # Contoh Trapezoid (tinggi=2000mm, lereng=500mm, dasar=1000mm)
-    # set_section_config(section_type=1, size1=2000, size2=500, size3=1000)
-
-    # Contoh Rectangle (tinggi=200mm, dasar=450mm)
-    set_section_config(section_type=2, size1=200, size3=450)
+    # Contoh Rectangle (size1tinggi=200mm, size3dasar=450mm)
+    set_section_config(section_type=1, size1=2800, size2=1000, size3=9600)
 
     sensor_data = read_sensor_data()
     print("📡 Data Sensor:", sensor_data)

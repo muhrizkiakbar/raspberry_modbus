@@ -62,7 +62,7 @@ class Flowmeter:
             except Exception as e:
                 print("❌ Gagal baca Velocity:", e)
 
-        if sensor == "flow":
+        if sensor == "debit":
             try:
                 # Instantaneous Flow (0x03EA = 1002) -> m³/s * 1000
                 flow_raw = instr.read_register(1002, 0, functioncode=3)

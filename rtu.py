@@ -9,15 +9,23 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 from modbusampere import Modbusampere
+from flowmeter import Flowmeter
 
 load_dotenv("/home/ftp/modbus/.env")
 
 TELEMETRY_URL = "https://telemetry-adaro.id/api/key/telemetry"
 CONFIG_URL = "https://telemetry-adaro.id/api/key/device_location/{}/config"
-DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
-API_KEY = str(os.getenv("API_KEY", ""))
-MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
-MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
+
+DEVICE_LOCATION_ID = 20
+API_KEY = "03e4e280-428a-402e-b00b-55f9851eeeb6"
+MQTT_USERNAME = "raspberry"
+MQTT_PASSWORD = "raspberry12345"
+
+# DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
+# API_KEY = str(os.getenv("API_KEY", ""))
+# MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
+# MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
+
 VERSION = "1.0.8"
 
 
@@ -27,6 +35,7 @@ class RTU:
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
         self.modbusampere = Modbusampere(self.ser_ports, self.config)
+        self.flowmeter = Flowmeter(self.ser_ports, self.config)
 
         self.report_requested = False
         self.restart_requested = False
@@ -212,16 +221,21 @@ class RTU:
                     )
                     print(sensor)
                     value = None
-                    if sensor["type"] == "4-20mA":
-                        value = self.modbusampere.read_analog(sensor, port)
-                    elif sensor["type"] == "digital_in":
-                        value = self.modbusampere.read_digital_inputs(sensor, port)
+                    if device["type"] == "modbus":
+                        if sensor["type"] == "4-20mA":
+                            value = self.modbusampere.read_analog(sensor, port)
+                        elif sensor["type"] == "digital_in":
+                            value = self.modbusampere.read_digital_inputs(sensor, port)
+                    elif (
+                        device["type"] == "direct_rs485" and device["name"] == "rs_rad"
+                    ):
+                        value = self.flowmeter.read_sensor_data(sensor, port)
 
                     sensor_data = {
                         sensor["name"]: {
                             "sensor_type": sensor["type"],
                             "unit": sensor.get("conversion", {}).get("unit", ""),
-                            "value": round(value, 1),
+                            "value": round(value, 1) if value is not None else "ERROR",
                             "status": "OK" if value is not None else "error",
                         }
                     }

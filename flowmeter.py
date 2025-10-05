@@ -40,10 +40,7 @@ class Flowmeter:
         """Baca semua data sensor"""
         instr = self.instruments[self.last_key]
 
-        print("========================= SENSOR ================================")
-        print(sensor)
-
-        if sensor == "water_height":
+        if sensor["name"] == "water_height":
             try:
                 # Register 1003 = current water level (permukaan air→dasar penampang, mm)
                 depth_info = instr.read_register(1003, 0, functioncode=3)
@@ -53,7 +50,7 @@ class Flowmeter:
             except Exception as e:
                 print("❌ Gagal baca Water Level:", e)
 
-        if sensor == "velocity":
+        if sensor["name"] == "velocity":
             try:
                 # Velocity (0x03EC = 1004) -> cm/s
                 velocity_cms = instr.read_register(1004, 0, functioncode=3)
@@ -65,7 +62,7 @@ class Flowmeter:
             except Exception as e:
                 print("❌ Gagal baca Velocity:", e)
 
-        if sensor == "debit":
+        if sensor["name"] == "debit":
             try:
                 # Instantaneous Flow (0x03EA = 1002) -> m³/s * 1000
                 flow_raw = instr.read_register(1002, 0, functioncode=3)

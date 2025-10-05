@@ -120,7 +120,6 @@ class RTU:
     def monitor_all_devices(self):
         while not self.restart_requested:
             if self.update_requested:
-                print("==================== UPDATING ==============================")
                 try:
                     print("Menjalankan git pull origin master...")
                     result = subprocess.run(
@@ -175,9 +174,6 @@ class RTU:
                     print("Error saat update:", e)
                 finally:
                     self.update_requested = False
-                print(
-                    "==================== END UPDATING =============================="
-                )
 
             payload_mqtt = {
                 "timestamp": time.time(),
@@ -207,14 +203,8 @@ class RTU:
             }
 
             for device in self.config["devices"]:
-                print("==================== Device =================")
-                print(device)
                 port = device["port"]
                 for sensor in device["sensors"]:
-                    print(
-                        "                    ==================== Sensor ================="
-                    )
-                    print(sensor)
                     value = None
                     if device["type"] == "modbus":
                         if sensor["type"] == "4-20mA":
@@ -242,14 +232,8 @@ class RTU:
                             if isinstance(value, (int, float))
                             else int(value)
                         )
-                    print(
-                        "                    ==================== End Sensor ================="
-                    )
-                print("==================== End Device =================")
 
             print("=========================== Value Error")
-            print("device")
-            print("sensor")
             print(payload_mqtt["sensors"])
             print("=========================== End Value Error")
             topic = self.config["mqtt"]["base_topic"]
@@ -259,13 +243,8 @@ class RTU:
 
             # Kirim ke API jika ada perintah report
             if self.report_requested:
-                print("==================== REPORTING ==============================")
-                print("Command report diterima → kirim API...")
                 self.send_telemetry(payload_api)
                 self.report_requested = False
-                print(
-                    "==================== END REPORTING =============================="
-                )
 
             time.sleep(5)
 

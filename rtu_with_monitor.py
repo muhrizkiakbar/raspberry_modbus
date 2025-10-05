@@ -207,14 +207,8 @@ class RTU:
             }
 
             for device in self.config["devices"]:
-                print("==================== Device =================")
-                print(device)
                 port = device["port"]
                 for sensor in device["sensors"]:
-                    print(
-                        "                    ==================== Sensor ================="
-                    )
-                    print(sensor)
                     value = None
                     if device["type"] == "modbus":
                         if sensor["type"] == "4-20mA":
@@ -242,10 +236,6 @@ class RTU:
                             if isinstance(value, (int, float))
                             else int(value)
                         )
-                    print(
-                        "                    ==================== End Sensor ================="
-                    )
-                print("==================== End Device =================")
 
             print(payload_mqtt)
             if payload_mqtt["sensors"]:
@@ -269,13 +259,9 @@ class RTU:
 
             # Kirim ke API jika ada perintah report
             if self.report_requested:
-                print("==================== REPORTING ==============================")
                 print("Command report diterima → kirim API...")
                 self.send_telemetry(payload_api)
                 self.report_requested = False
-                print(
-                    "==================== END REPORTING =============================="
-                )
 
             time.sleep(5)
 

@@ -56,6 +56,7 @@ class RTU:
                 mm_per_pulse=0.5,
                 realtime_interval=5,
             )
+            print("Jalan ======== RAINFALL")
             self.rain_thread.start()
         else:
             self.rain_thread = None

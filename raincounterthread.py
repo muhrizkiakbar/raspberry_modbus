@@ -116,6 +116,9 @@ class RainCounterThread(threading.Thread):
                     "=================================== State ========================"
                 )
                 print(state)
+                print(self.daily_count)
+                print(self.total_count)
+                print(self.realtime_count)
                 if state is not None:
                     # detect rising edge (active True after being False)
                     if state and not self.last_state:

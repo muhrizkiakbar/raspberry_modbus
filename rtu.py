@@ -232,7 +232,6 @@ class RTU:
                 for sensor in device["sensors"]:
                     value = None
                     if device["type"] == "modbus":
-                        print(sensor)
                         if sensor["type"] == "4-20mA":
                             value = self.modbusampere.read_analog(sensor, port)
                         elif (
@@ -243,7 +242,7 @@ class RTU:
                                 "================================================= Hari"
                             )
                             print(sensor["name"])
-                            value = self.modbusampere.read_digital_inputs(sensor, port)
+                            # value = self.modbusampere.read_digital_inputs(sensor, port)
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"
                     ):

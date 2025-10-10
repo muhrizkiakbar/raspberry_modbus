@@ -283,9 +283,9 @@ class RTU:
             )
 
             # Kirim ke API jika ada perintah report
-            if self.report_requested:
-                self.send_telemetry(payload_api)
-                self.report_requested = False
+            # if self.report_requested:
+            #    self.send_telemetry(payload_api)
+            #    self.report_requested = False
 
             time.sleep(5)
 

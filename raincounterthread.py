@@ -52,7 +52,8 @@ class RainCounterThread(threading.Thread):
         self.last_realtime = time.time()
 
         # For debounce: require stable edge for confirm_ms
-        self.debounce_confirm_ms = 50
+        # self.debounce_confirm_ms = 50
+        self.debounce_confirm_ms = 100
 
         # Load persisted counts
         self.load_count()

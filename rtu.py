@@ -234,11 +234,11 @@ class RTU:
                     if device["type"] == "modbus":
                         if sensor["type"] == "4-20mA":
                             value = self.modbusampere.read_analog(sensor, port)
-                        # elif (
-                        #    sensor["type"] == "digital_in"
-                        #    and sensor["name"] != "rainfall"
-                        # ):
-                        #    value = self.modbusampere.read_digital_inputs(sensor, port)
+                        elif (
+                            sensor["type"] == "digital_in"
+                            and sensor["name"] != "rainfall"
+                        ):
+                            value = self.modbusampere.read_digital_inputs(sensor, port)
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"
                     ):
@@ -268,7 +268,7 @@ class RTU:
                 payload_api["rainfall_daily"] = self.rain_thread.rainfall_daily
                 payload_api["rainfall_total"] = self.rain_thread.rainfall_total
 
-                payload_mqtt["rainfall"] = {
+                payload_mqtt["sensors"]["rainfall"] = {
                     "realtime": payload_api["rainfall"],
                     "daily": payload_api["rainfall_daily"],
                     "total": payload_api["rainfall_total"],

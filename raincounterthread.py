@@ -16,8 +16,8 @@ class RainCounterThread(threading.Thread):
         sensor,
         port,
         save_path="/home/ftp/modbus/rain_counter.json",
-        mm_per_pulse=0.5,  # sensor resolution
-        realtime_interval=5,  # 5 detik untuk mode realtime
+        mm_per_pulse=0.5,  # resolusi sensor
+        realtime_interval=5,  # interval realtime (detik)
         polling_ms=20,  # polling cepat (20 ms)
         debounce_ms=20,  # waktu debounce
         max_mm_per_min=8.0,  # intensitas maksimum sensor
@@ -32,11 +32,8 @@ class RainCounterThread(threading.Thread):
         self.polling_s = polling_ms / 1000.0
         self.debounce_s = debounce_ms / 1000.0
 
-        # Hitung batas intensitas (pulse per interval)
+        # batas intensitas
         self.pulses_per_min_max = max_mm_per_min / mm_per_pulse
-        self.pulses_per_interval_warn = (
-            self.pulses_per_min_max / 60.0
-        ) * realtime_interval
 
         # Counter
         self.running = True
@@ -45,16 +42,13 @@ class RainCounterThread(threading.Thread):
         self.realtime_count = 0
         self.hourly_count = 0
 
-        # State tracking
+        # Tracking waktu
         self.last_state = False
         self.last_day = datetime.now().day
         self.last_hour = datetime.now().hour
         self.last_realtime = time.time()
 
-        # Log per jam
-        self.hourly_log = {}
-
-        # Load count sebelumnya
+        # Load data sebelumnya
         self.load_count()
 
     # ============================================================
@@ -66,7 +60,8 @@ class RainCounterThread(threading.Thread):
                 data = json.load(f)
                 self.total_count = int(data.get("total", 0))
                 self.daily_count = int(data.get("daily", 0))
-                self.hourly_log = data.get("hourly", {})
+                self.hourly_count = int(data.get("hourly_count", 0))
+                self.last_hour = data.get("last_hour", self.last_hour)
         except Exception:
             pass
 
@@ -77,7 +72,9 @@ class RainCounterThread(threading.Thread):
                     {
                         "total": self.total_count,
                         "daily": self.daily_count,
-                        "hourly": self.hourly_log,
+                        "hourly_count": self.hourly_count,
+                        "hour": self.last_hour,
+                        "hourly_mm": round(self.hourly_count * self.mm_per_pulse, 2),
                         "updated": datetime.now().isoformat(),
                     },
                     f,
@@ -87,7 +84,7 @@ class RainCounterThread(threading.Thread):
             print(f"[RainCounter] Error saving rain count: {e}")
 
     # ============================================================
-    # Main thread
+    # Main Thread
     # ============================================================
     def run(self):
         print("[RainCounter] Thread started. (active LOW, 0.5 mm/pulse)")
@@ -99,22 +96,21 @@ class RainCounterThread(threading.Thread):
             # Reset harian setiap tengah malam
             if now.day != self.last_day:
                 self.daily_count = 0
-                self.hourly_log = {}
+                self.hourly_count = 0
                 self.last_day = now.day
+                self.last_hour = now.hour
                 self.save_count()
                 print("[RainCounter] Reset daily rainfall.")
 
-            # Reset jam baru
+            # Reset saat masuk jam baru
             if now.hour != self.last_hour:
-                rainfall_mm = self.hourly_count * self.mm_per_pulse
-                hour_key = f"{now.strftime('%Y-%m-%dT%H:00:00')}"
-                self.hourly_log[hour_key] = round(rainfall_mm, 2)
+                print(
+                    f"[RainCounter] Hourly reset. Previous hour total: "
+                    f"{self.hourly_count * self.mm_per_pulse:.2f} mm"
+                )
                 self.hourly_count = 0
                 self.last_hour = now.hour
                 self.save_count()
-                print(
-                    f"[RainCounter] Hourly log saved: {hour_key} = {rainfall_mm:.2f} mm"
-                )
 
             try:
                 raw_state = self.modbusampere.read_digital_inputs(
@@ -127,7 +123,7 @@ class RainCounterThread(threading.Thread):
 
                     # Deteksi rising edge (OFF → ON / 1 pulse)
                     if state and not self.last_state:
-                        # Debounce cepat (konfirmasi sinyal stabil)
+                        # Debounce cepat
                         time.sleep(self.debounce_s)
                         confirm = not self.modbusampere.read_digital_inputs(
                             self.sensor, self.port
@@ -148,17 +144,15 @@ class RainCounterThread(threading.Thread):
             except Exception as e:
                 print(f"[RainCounter] Read error: {e}")
 
-            # Reset realtime counter tiap interval (5 detik)
+            # Interval realtime reset
             if t - self.last_realtime >= self.realtime_interval:
-                # Hitung intensitas
                 mm_interval = self.realtime_count * self.mm_per_pulse
                 mm_per_min_equiv = (mm_interval / self.realtime_interval) * 60.0
 
                 if mm_per_min_equiv > 8.0:
                     print(
                         f"[RainCounter][WARN] Intensity too high: "
-                        f"{mm_per_min_equiv:.2f} mm/min "
-                        f"(allowed ≤ 8 mm/min)"
+                        f"{mm_per_min_equiv:.2f} mm/min (allowed ≤ 8 mm/min)"
                     )
 
                 # Reset untuk interval berikutnya
@@ -168,30 +162,26 @@ class RainCounterThread(threading.Thread):
             time.sleep(self.polling_s)
 
     # ============================================================
-    # Stop thread
+    # Stop Thread
     # ============================================================
     def stop(self):
         self.running = False
 
     # ============================================================
-    # Properti hasil
+    # Property hasil
     # ============================================================
     @property
     def rainfall_realtime(self):
-        """Curah hujan selama interval realtime (mis. 5 detik)."""
         return round(self.realtime_count * self.mm_per_pulse, 3)
 
     @property
     def rainfall_hourly(self):
-        """Curah hujan jam ini."""
         return round(self.hourly_count * self.mm_per_pulse, 2)
 
     @property
     def rainfall_daily(self):
-        """Total hujan hari ini."""
         return round(self.daily_count * self.mm_per_pulse, 2)
 
     @property
     def rainfall_total(self):
-        """Akumulasi total sepanjang waktu."""
         return round(self.total_count * self.mm_per_pulse, 2)

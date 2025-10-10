@@ -264,7 +264,6 @@ class RTU:
             # tambahkan curah hujan realtime dari thread
             if self.rain_thread:
                 # NOTE: rainfall_realtime dihitung dari counts di window saat ini
-                print("================== Baca Sensor Hujan =================")
                 payload_api["rainfall"] = self.rain_thread.rainfall_realtime
                 payload_api["rainfall_daily"] = self.rain_thread.rainfall_daily
                 payload_api["rainfall_total"] = self.rain_thread.rainfall_total
@@ -276,7 +275,6 @@ class RTU:
                     "unit": "mm",
                 }
 
-            print(payload_mqtt)
             topic = self.config["mqtt"]["base_topic"]
             self.mqtt_client.publish(
                 topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]

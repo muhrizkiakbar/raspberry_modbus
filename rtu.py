@@ -232,6 +232,7 @@ class RTU:
                 for sensor in device["sensors"]:
                     value = None
                     if device["type"] == "modbus":
+                        print(sensor)
                         if sensor["type"] == "4-20mA":
                             value = self.modbusampere.read_analog(sensor, port)
                         elif (
@@ -279,9 +280,7 @@ class RTU:
                     "unit": "mm",
                 }
 
-            print("=========================== Value Error")
             print(payload_mqtt["sensors"])
-            print("=========================== End Value Error")
             topic = self.config["mqtt"]["base_topic"]
             self.mqtt_client.publish(
                 topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]

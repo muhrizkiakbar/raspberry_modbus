@@ -234,7 +234,12 @@ class RTU:
                     if device["type"] == "modbus":
                         if sensor["type"] == "4-20mA":
                             value = self.modbusampere.read_analog(sensor, port)
-                        elif sensor["type"] == "digital_in":
+                        elif (
+                            sensor["type"] == "digital_in"
+                            and sensor["name"] != "rainfall"
+                        ):
+                            print(================================================= Hari)
+                            print(sensor["name"])
                             value = self.modbusampere.read_digital_inputs(sensor, port)
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"

@@ -238,7 +238,9 @@ class RTU:
                             sensor["type"] == "digital_in"
                             and sensor["name"] != "rainfall"
                         ):
-                            print(================================================= Hari)
+                            print(
+                                "================================================= Hari"
+                            )
                             print(sensor["name"])
                             value = self.modbusampere.read_digital_inputs(sensor, port)
                     elif (

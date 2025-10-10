@@ -110,10 +110,10 @@ class RTU:
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
-            print("Connected to MQTT Broker")
+            #print("Connected to MQTT Broker")
             client.subscribe(self.config["mqtt"]["command_topic"], qos=1)
         else:
-            print(f"Failed to connect MQTT: {reason_code}")
+            #print(f"Failed to connect MQTT: {reason_code}")
 
     def on_message(self, client, userdata, msg):
         payload = msg.payload.decode().strip().lower()
@@ -274,6 +274,7 @@ class RTU:
                     "total": payload_api["rainfall_total"],
                     "unit": "mm",
                 }
+            print(payload_mqtt)
 
             topic = self.config["mqtt"]["base_topic"]
             self.mqtt_client.publish(

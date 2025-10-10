@@ -268,14 +268,14 @@ class RTU:
                 payload_api["rainfall_daily"] = self.rain_thread.rainfall_daily
                 payload_api["rainfall_total"] = self.rain_thread.rainfall_total
 
-                payload_mqtt["sensors"]["rainfall"] = {
+                payload_mqtt["rainfall"] = {
                     "realtime": payload_api["rainfall"],
                     "daily": payload_api["rainfall_daily"],
                     "total": payload_api["rainfall_total"],
                     "unit": "mm",
                 }
 
-            print(payload_mqtt["sensors"])
+            print(payload_mqtt)
             topic = self.config["mqtt"]["base_topic"]
             self.mqtt_client.publish(
                 topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]

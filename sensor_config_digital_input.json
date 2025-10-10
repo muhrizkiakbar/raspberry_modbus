@@ -18,7 +18,7 @@
   },
   "devices": [
     {
-      "name": "WellproAmpere",
+      "name": "modbusampere",
       "port": "/dev/ttyUSB0",
       "type": "modbus",
       "sensors": [
@@ -80,6 +80,64 @@
           "channel": 2
         }
       ]
+    },
+    {
+      "name": "rs_rad",
+      "port": "/dev/ttyUSB1",
+      "type": "direct_rs485",
+      "sensors": [
+        {
+          "name": "debit",
+          "type": "rs485",
+          "slave_address": 1,
+          "conversion": {
+            "register_type": "16bit_int",
+            "scaling_factor": 0.001,
+            "unit": "m³/s"
+          },
+          "register_address": 1002
+        },
+        {
+          "name": "water_height",
+          "type": "rs485",
+          "slave_address": 1,
+          "conversion": {
+            "register_type": "16bit_int",
+            "scaling_factor": 1,
+            "unit": "mm"
+          },
+          "register_address": 1003
+        },
+        {
+          "name": "Velocity",
+          "type": "rs485",
+          "slave_address": 1,
+          "conversion": {
+            "register_type": "16bit_int",
+            "scaling_factor": 0.01,
+            "unit": "m/s"
+          },
+          "register_address": 1004
+        },
+        {
+          "name": "water_volume",
+          "type": "rs485",
+          "slave_address": 1,
+          "conversion": {
+            "register_type": "32bit_int",
+            "scaling_factor": 1,
+            "unit": "m³"
+          },
+          "register_address": 1000
+        }
+      ],
+      "section_parameters": {
+        "section_type": 1,
+        "size1": 2600,
+        "size2": 1000,
+        "size3": 7000,
+        "height_sensor": 1400
+      }
     }
   ]
 }

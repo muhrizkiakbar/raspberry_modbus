@@ -10,6 +10,7 @@ import requests
 from dotenv import load_dotenv
 from modbusampere import Modbusampere
 from flowmeter import Flowmeter
+from raincounterthread import RainCounterThread
 
 load_dotenv("/home/ftp/modbus/.env")
 
@@ -35,6 +36,29 @@ class RTU:
         self.report_requested = False
         self.restart_requested = False
         self.update_requested = False
+
+        # === Rain Counter Thread ===
+        rain_sensor = None
+        rain_port = None
+        for device in self.config["devices"]:
+            if device["name"].lower() == "modbusampere":
+                for sensor in device["sensors"]:
+                    if sensor["name"].lower() == "rainfall":
+                        rain_sensor = sensor
+                        rain_port = device["port"]
+                        break
+
+        if rain_sensor:
+            self.rain_thread = RainCounterThread(
+                self.modbusampere,
+                rain_sensor,
+                rain_port,
+                mm_per_pulse=0.5,
+                realtime_interval=5,
+            )
+            self.rain_thread.start()
+        else:
+            self.rain_thread = None
 
     def load_config(self, config_file):
         url = CONFIG_URL.format(DEVICE_LOCATION_ID)

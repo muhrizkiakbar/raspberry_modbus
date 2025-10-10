@@ -264,6 +264,7 @@ class RTU:
             # tambahkan curah hujan realtime dari thread
             if self.rain_thread:
                 # NOTE: rainfall_realtime dihitung dari counts di window saat ini
+                print("================== Baca Sensor Hujan =================")
                 payload_api["rainfall"] = self.rain_thread.rainfall_realtime
                 payload_api["rainfall_daily"] = self.rain_thread.rainfall_daily
                 payload_api["rainfall_total"] = self.rain_thread.rainfall_total

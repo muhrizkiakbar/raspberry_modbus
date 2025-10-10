@@ -112,6 +112,10 @@ class RainCounterThread(threading.Thread):
 
             try:
                 state = self.modbusampere.read_digital_inputs(self.sensor, self.port)
+                print(
+                    "=================================== State ========================"
+                )
+                print(state)
                 if state is not None:
                     # detect rising edge (active True after being False)
                     if state and not self.last_state:

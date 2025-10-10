@@ -1,27 +1,26 @@
 import threading
+import time
 import json
 from datetime import datetime
-import time
 
 
-# ============================================================
-# RainCounterThread (realtime per 5s, daily, total) -- updated
-# Sensor spec:
-#  - resolution: 0.5 mm per pulse
-#  - output: pulse (reed/tipping bucket)
-#  - max intensity allowed: 8 mm/min -> 16 pulses/min
-# ============================================================
 class RainCounterThread(threading.Thread):
+    """
+    Thread penghitung curah hujan berbasis sensor tipping bucket (reed switch).
+    Kompatibel dengan Wellpro WP9038ADAM (input aktif LOW).
+    """
+
     def __init__(
         self,
         modbusampere,
         sensor,
         port,
         save_path="/home/ftp/modbus/rain_counter.json",
-        mm_per_pulse=0.5,  # <- sesuaikan dengan spec sensor
-        realtime_interval=5,  # 5 second realtime window
-        polling_ms=100,  # polling every 100ms
-        max_mm_per_min=8.0,  # spec: 8 mm/min maximum allowed
+        mm_per_pulse=0.5,  # sensor resolution
+        realtime_interval=5,  # 5 detik untuk mode realtime
+        polling_ms=20,  # polling cepat (20 ms)
+        debounce_ms=20,  # waktu debounce
+        max_mm_per_min=8.0,  # intensitas maksimum sensor
     ):
         super().__init__(daemon=True)
         self.modbusampere = modbusampere
@@ -31,40 +30,44 @@ class RainCounterThread(threading.Thread):
         self.save_path = save_path
         self.realtime_interval = realtime_interval
         self.polling_s = polling_ms / 1000.0
+        self.debounce_s = debounce_ms / 1000.0
 
-        # compute thresholds
-        # pulses_per_min_max = max_mm_per_min / mm_per_pulse
-        self.pulses_per_min_max = max_mm_per_min / self.mm_per_pulse
-        # pulses allowed in realtime interval (5s)
-        self.pulses_per_interval_max = (
+        # Hitung batas intensitas (pulse per interval)
+        self.pulses_per_min_max = max_mm_per_min / mm_per_pulse
+        self.pulses_per_interval_warn = (
             self.pulses_per_min_max / 60.0
-        ) * self.realtime_interval
-        # add small tolerance and round up
-        self.pulses_per_interval_warn = max(1, int(self.pulses_per_interval_max + 1))
+        ) * realtime_interval
 
-        # Thread state
+        # Counter
         self.running = True
         self.total_count = 0
-        self.realtime_count = 0
         self.daily_count = 0
+        self.realtime_count = 0
+        self.hourly_count = 0
+
+        # State tracking
         self.last_state = False
         self.last_day = datetime.now().day
+        self.last_hour = datetime.now().hour
         self.last_realtime = time.time()
 
-        # For debounce: require stable edge for confirm_ms
-        self.debounce_confirm_ms = 50
+        # Log per jam
+        self.hourly_log = {}
 
-        # Load persisted counts
+        # Load count sebelumnya
         self.load_count()
 
+    # ============================================================
+    # Helper
+    # ============================================================
     def load_count(self):
         try:
             with open(self.save_path, "r") as f:
                 data = json.load(f)
                 self.total_count = int(data.get("total", 0))
                 self.daily_count = int(data.get("daily", 0))
+                self.hourly_log = data.get("hourly", {})
         except Exception:
-            # file mungkin belum ada: fine
             pass
 
     def save_count(self):
@@ -74,116 +77,121 @@ class RainCounterThread(threading.Thread):
                     {
                         "total": self.total_count,
                         "daily": self.daily_count,
-                        "last_saved": datetime.now().isoformat(),
+                        "hourly": self.hourly_log,
+                        "updated": datetime.now().isoformat(),
                     },
                     f,
+                    indent=2,
                 )
         except Exception as e:
             print(f"[RainCounter] Error saving rain count: {e}")
 
-    def _confirm_pulse(self):
-        """
-        Simple debounce: after seeing active (True) state, wait debounce_confirm_ms and re-read.
-        Return True if still active.
-        """
-        try:
-            time.sleep(self.debounce_confirm_ms / 1000.0)
-            confirm = self.modbusampere.read_digital_inputs(self.sensor, self.port)
-            return bool(confirm)
-        except Exception:
-            return False
-
+    # ============================================================
+    # Main thread
+    # ============================================================
     def run(self):
-        print(
-            "[RainCounter] Thread started. mm_per_pulse={} mm, realtime_interval={}s".format(
-                self.mm_per_pulse, self.realtime_interval
-            )
-        )
+        print("[RainCounter] Thread started. (active LOW, 0.5 mm/pulse)")
+
         while self.running:
             now = datetime.now()
-            current_time = time.time()
+            t = time.time()
 
-            # Reset harian setiap tengah malam (jika hari berganti)
+            # Reset harian setiap tengah malam
             if now.day != self.last_day:
                 self.daily_count = 0
+                self.hourly_log = {}
                 self.last_day = now.day
-                print("[RainCounter] Reset daily rainfall at midnight.")
                 self.save_count()
+                print("[RainCounter] Reset daily rainfall.")
+
+            # Reset jam baru
+            if now.hour != self.last_hour:
+                rainfall_mm = self.hourly_count * self.mm_per_pulse
+                hour_key = f"{now.strftime('%Y-%m-%dT%H:00:00')}"
+                self.hourly_log[hour_key] = round(rainfall_mm, 2)
+                self.hourly_count = 0
+                self.last_hour = now.hour
+                self.save_count()
+                print(
+                    f"[RainCounter] Hourly log saved: {hour_key} = {rainfall_mm:.2f} mm"
+                )
 
             try:
                 raw_state = self.modbusampere.read_digital_inputs(
                     self.sensor, self.port
                 )
-                if raw_state is not None:
-                    state = not raw_state  # aktif saat low
-                    if state and not self.last_state:
-                        self.total_count += 1
-                        self.realtime_count += 1
-                        self.daily_count += 1
-                        self.save_count()
-                        print(f"[RainCounter] Pulse detected. Total={self.total_count}")
-                    self.last_state = state
-                    print(
-                        f"[RainCounter] raw_state={raw_state}, state(after invert)={state}"
-                    )
 
-                # state = self.modbusampere.read_digital_inputs(self.sensor, self.port)
-                # print(
-                #    "=================================== State ========================"
-                # )
-                # print(state)
-                # print(self.daily_count)
-                # print(self.total_count)
-                # print(self.realtime_count)
-                # if state is not None:
-                #    # detect rising edge (active True after being False)
-                #    if state and not self.last_state:
-                #        # confirm debounce to avoid false bouncing
-                #        if self._confirm_pulse():
-                #            self.total_count += 1
-                #            self.realtime_count += 1
-                #            self.daily_count += 1
-                #            self.save_count()
-                #            print(
-                #                f"[RainCounter] Pulse detected. total={self.total_count}, realtime_count={self.realtime_count}"
-                #            )
-                #        else:
-                #            # bounce ignored
-                #            pass
-                #    self.last_state = state
+                if raw_state is not None:
+                    # Aktif LOW → invert hasil bacaan
+                    state = not raw_state
+
+                    # Deteksi rising edge (OFF → ON / 1 pulse)
+                    if state and not self.last_state:
+                        # Debounce cepat (konfirmasi sinyal stabil)
+                        time.sleep(self.debounce_s)
+                        confirm = not self.modbusampere.read_digital_inputs(
+                            self.sensor, self.port
+                        )
+
+                        if confirm:
+                            self.total_count += 1
+                            self.daily_count += 1
+                            self.realtime_count += 1
+                            self.hourly_count += 1
+                            self.save_count()
+                            print(
+                                f"[RainCounter] Pulse detected. total={self.total_count}"
+                            )
+
+                    self.last_state = state
+
             except Exception as e:
                 print(f"[RainCounter] Read error: {e}")
 
-            # jika realtime interval lewat, kita reset realtime_count (window sliding fixed)
-            if current_time - self.last_realtime >= self.realtime_interval:
-                # Before reset, we can check intensity and warn if exceeds allowed
-                # Compute pulses in last interval (self.realtime_count)
-                if self.realtime_count > self.pulses_per_interval_warn:
-                    mm_interval = self.realtime_count * self.mm_per_pulse
-                    mm_per_min_equiv = (mm_interval / self.realtime_interval) * 60.0
-                    print(
-                        f"[RainCounter][WARN] High intensity detected: {self.realtime_count} pulses in {self.realtime_interval}s => {mm_interval} mm ({mm_per_min_equiv:.2f} mm/min). Max allowed {self.pulses_per_min_max * self.mm_per_pulse:.2f} mm/min"
-                    )
-                    # you may choose to cap the reported realtime or send flag; here we still report the measured value but warn.
+            # Reset realtime counter tiap interval (5 detik)
+            if t - self.last_realtime >= self.realtime_interval:
+                # Hitung intensitas
+                mm_interval = self.realtime_count * self.mm_per_pulse
+                mm_per_min_equiv = (mm_interval / self.realtime_interval) * 60.0
 
-                # reset realtime count for next window
+                if mm_per_min_equiv > 8.0:
+                    print(
+                        f"[RainCounter][WARN] Intensity too high: "
+                        f"{mm_per_min_equiv:.2f} mm/min "
+                        f"(allowed ≤ 8 mm/min)"
+                    )
+
+                # Reset untuk interval berikutnya
                 self.realtime_count = 0
-                self.last_realtime = current_time
+                self.last_realtime = t
 
             time.sleep(self.polling_s)
 
+    # ============================================================
+    # Stop thread
+    # ============================================================
     def stop(self):
         self.running = False
 
+    # ============================================================
+    # Properti hasil
+    # ============================================================
     @property
     def rainfall_realtime(self):
-        """Hujan per interval realtime (misal 5 detik) in mm."""
+        """Curah hujan selama interval realtime (mis. 5 detik)."""
         return round(self.realtime_count * self.mm_per_pulse, 3)
 
     @property
+    def rainfall_hourly(self):
+        """Curah hujan jam ini."""
+        return round(self.hourly_count * self.mm_per_pulse, 2)
+
+    @property
     def rainfall_daily(self):
+        """Total hujan hari ini."""
         return round(self.daily_count * self.mm_per_pulse, 2)
 
     @property
     def rainfall_total(self):
+        """Akumulasi total sepanjang waktu."""
         return round(self.total_count * self.mm_per_pulse, 2)

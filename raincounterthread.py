@@ -52,8 +52,7 @@ class RainCounterThread(threading.Thread):
         self.last_realtime = time.time()
 
         # For debounce: require stable edge for confirm_ms
-        # self.debounce_confirm_ms = 50
-        self.debounce_confirm_ms = 100
+        self.debounce_confirm_ms = 50
 
         # Load persisted counts
         self.load_count()
@@ -112,30 +111,46 @@ class RainCounterThread(threading.Thread):
                 self.save_count()
 
             try:
-                state = self.modbusampere.read_digital_inputs(self.sensor, self.port)
-                print(
-                    "=================================== State ========================"
+                raw_state = self.modbusampere.read_digital_inputs(
+                    self.sensor, self.port
                 )
-                print(state)
-                print(self.daily_count)
-                print(self.total_count)
-                print(self.realtime_count)
-                if state is not None:
-                    # detect rising edge (active True after being False)
+                if raw_state is not None:
+                    state = not raw_state  # aktif saat low
                     if state and not self.last_state:
-                        # confirm debounce to avoid false bouncing
-                        if self._confirm_pulse():
-                            self.total_count += 1
-                            self.realtime_count += 1
-                            self.daily_count += 1
-                            self.save_count()
-                            print(
-                                f"[RainCounter] Pulse detected. total={self.total_count}, realtime_count={self.realtime_count}"
-                            )
-                        else:
-                            # bounce ignored
-                            pass
+                        self.total_count += 1
+                        self.realtime_count += 1
+                        self.daily_count += 1
+                        self.save_count()
+                        print(f"[RainCounter] Pulse detected. Total={self.total_count}")
                     self.last_state = state
+                    print(
+                        f"[RainCounter] raw_state={raw_state}, state(after invert)={state}"
+                    )
+
+                # state = self.modbusampere.read_digital_inputs(self.sensor, self.port)
+                # print(
+                #    "=================================== State ========================"
+                # )
+                # print(state)
+                # print(self.daily_count)
+                # print(self.total_count)
+                # print(self.realtime_count)
+                # if state is not None:
+                #    # detect rising edge (active True after being False)
+                #    if state and not self.last_state:
+                #        # confirm debounce to avoid false bouncing
+                #        if self._confirm_pulse():
+                #            self.total_count += 1
+                #            self.realtime_count += 1
+                #            self.daily_count += 1
+                #            self.save_count()
+                #            print(
+                #                f"[RainCounter] Pulse detected. total={self.total_count}, realtime_count={self.realtime_count}"
+                #            )
+                #        else:
+                #            # bounce ignored
+                #            pass
+                #    self.last_state = state
             except Exception as e:
                 print(f"[RainCounter] Read error: {e}")
 

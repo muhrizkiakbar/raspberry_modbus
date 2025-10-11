@@ -267,8 +267,8 @@ class RTU:
                             sensor["name"]: {
                                 "sensor_type": sensor["type"],
                                 "unit": sensor.get("conversion", {}).get("unit", ""),
-                                "value": round(value_details["realtime"], 1)
-                                if value_details["realtime"] is not None
+                                "value": round(value_details["hourly"], 1)
+                                if value_details["hourly"] is not None
                                 else "ERROR",
                                 "status": "OK" if value is not None else "error",
                                 "values": value_details,

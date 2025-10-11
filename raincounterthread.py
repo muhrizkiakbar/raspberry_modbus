@@ -16,11 +16,11 @@ class RainCounterThread(threading.Thread):
         sensor,
         port,
         save_path="/home/ftp/modbus/rain_counter.json",
-        mm_per_pulse=0.5,  # resolusi sensor
+        mm_per_pulse=0.5,  # resolusi sensor (0.5 mm/pulse)
         realtime_interval=5,  # interval realtime (detik)
         polling_ms=20,  # polling cepat (20 ms)
-        debounce_ms=20,  # waktu debounce
-        max_mm_per_min=8.0,  # intensitas maksimum sensor
+        debounce_ms=20,  # waktu debounce (20 ms)
+        max_mm_per_min=8.0,  # batas intensitas maksimum sensor
     ):
         super().__init__(daemon=True)
         self.modbusampere = modbusampere
@@ -59,9 +59,9 @@ class RainCounterThread(threading.Thread):
             with open(self.save_path, "r") as f:
                 data = json.load(f)
                 self.total_count = int(data.get("total", 0))
-                self.daily_count = int(data.get("daily", 0))
+                self.daily_count = int(data.get("daily_count", 0))
                 self.hourly_count = int(data.get("hourly_count", 0))
-                self.last_hour = data.get("last_hour", self.last_hour)
+                self.last_hour = data.get("hour", self.last_hour)
         except Exception:
             pass
 
@@ -71,10 +71,11 @@ class RainCounterThread(threading.Thread):
                 json.dump(
                     {
                         "total": self.total_count,
-                        "daily": self.daily_count,
+                        "daily_count": self.daily_count,
+                        "daily_mm": round(self.daily_count * self.mm_per_pulse, 2),
                         "hourly_count": self.hourly_count,
-                        "hour": self.last_hour,
                         "hourly_mm": round(self.hourly_count * self.mm_per_pulse, 2),
+                        "hour": self.last_hour,
                         "updated": datetime.now().isoformat(),
                     },
                     f,

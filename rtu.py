@@ -228,6 +228,8 @@ class RTU:
                 "water_volume": 0.0,
             }
 
+            value_details = {}
+
             for device in self.config["devices"]:
                 port = device["port"]
                 for sensor in device["sensors"]:
@@ -235,24 +237,53 @@ class RTU:
                     if device["type"] == "modbus":
                         if sensor["type"] == "4-20mA":
                             value = self.modbusampere.read_analog(sensor, port)
-                        elif (
-                            sensor["type"] == "digital_in"
-                            and sensor["name"] != "rainfall"
-                        ):
-                            value = self.modbusampere.read_digital_inputs(sensor, port)
+                        elif sensor["type"] == "digital_in":
+                            if self.rain_thread and sensor["name"] != "rainfall":
+                                value_details = {
+                                    "realtime": self.rain_thread.rainfall_realtime,
+                                    "daily": self.rain_thread.rainfall_daily,
+                                    "hourly": self.rain_thread.rainfall_hourly,
+                                    "total": self.rain_thread.rainfall_total,
+                                    "unit": "mm",
+                                }
+                                value = self.rain_thread.rainfall_hourly
+                            else:
+                                value = self.modbusampere.read_digital_inputs(
+                                    sensor, port
+                                )
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"
                     ):
                         value = self.flowmeter.read_sensor_data(sensor, port)
 
-                    sensor_data = {
-                        sensor["name"]: {
-                            "sensor_type": sensor["type"],
-                            "unit": sensor.get("conversion", {}).get("unit", ""),
-                            "value": round(value, 1) if value is not None else "ERROR",
-                            "status": "OK" if value is not None else "error",
+                    sensor_data = {}
+
+                    if self.rain_thread:
+                        sensor_data = {
+                            sensor["name"]: {
+                                "sensor_type": sensor["type"],
+                                "unit": sensor.get("conversion", {}).get("unit", ""),
+                                "value": round(value_details["realtime"], 1)
+                                if value is not None
+                                else "ERROR",
+                                "status": "OK" if value is not None else "error",
+                                "values": value_details,
+                            }
                         }
-                    }
+
+                    else:
+                        sensor_data = {
+                            sensor["name"]: {
+                                "sensor_type": sensor["type"],
+                                "unit": sensor.get("conversion", {}).get("unit", ""),
+                                "value": round(value, 1)
+                                if value is not None
+                                else "ERROR",
+                                "status": "OK" if value is not None else "error",
+                                "value_details": value_details,
+                            }
+                        }
+
                     payload_mqtt["sensors"].append(sensor_data)
 
                     if value is not None and sensor["name"] in payload_api:
@@ -262,19 +293,6 @@ class RTU:
                             else int(value)
                         )
 
-            # tambahkan curah hujan realtime dari thread
-            if self.rain_thread:
-                # NOTE: rainfall_realtime dihitung dari counts di window saat ini
-                payload_api["rainfall"] = self.rain_thread.rainfall_realtime
-                payload_api["rainfall_daily"] = self.rain_thread.rainfall_daily
-                payload_api["rainfall_total"] = self.rain_thread.rainfall_total
-
-                payload_mqtt["rainfall"] = {
-                    "realtime": payload_api["rainfall"],
-                    "daily": payload_api["rainfall_daily"],
-                    "total": payload_api["rainfall_total"],
-                    "unit": "mm",
-                }
             print(payload_mqtt)
 
             topic = self.config["mqtt"]["base_topic"]

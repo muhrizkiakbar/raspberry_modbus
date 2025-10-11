@@ -247,10 +247,10 @@ class RTU:
                                     "unit": "mm",
                                 }
                                 value = self.rain_thread.rainfall_hourly
-                            else:
-                                #value = self.modbusampere.read_digital_inputs(
-                                #    sensor, port
-                                #)
+                            # else:
+                            # value = self.modbusampere.read_digital_inputs(
+                            #    sensor, port
+                            # )
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"
                     ):

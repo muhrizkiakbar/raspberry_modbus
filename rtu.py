@@ -239,8 +239,8 @@ class RTU:
                             value = self.modbusampere.read_analog(sensor, port)
                         elif sensor["type"] == "digital_in":
                             print("SENSORRRRR ========")
-                            print(sensor["name"])
                             if self.rain_thread and sensor["name"] != "rainfall":
+                                print(sensor["name"])
                                 value_details = {
                                     "realtime": self.rain_thread.rainfall_realtime,
                                     "daily": self.rain_thread.rainfall_daily,
@@ -249,10 +249,10 @@ class RTU:
                                     "unit": "mm",
                                 }
                                 value = self.rain_thread.rainfall_hourly
-                            # else:
-                            # value = self.modbusampere.read_digital_inputs(
-                            #    sensor, port
-                            # )
+                            else:
+                                value = self.modbusampere.read_digital_inputs(
+                                    sensor, port
+                                )
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"
                     ):

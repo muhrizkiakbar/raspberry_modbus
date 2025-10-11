@@ -238,6 +238,8 @@ class RTU:
                         if sensor["type"] == "4-20mA":
                             value = self.modbusampere.read_analog(sensor, port)
                         elif sensor["type"] == "digital_in":
+                            print("SENSORRRRR ========")
+                            print(sensor["name"])
                             if self.rain_thread and sensor["name"] != "rainfall":
                                 value_details = {
                                     "realtime": self.rain_thread.rainfall_realtime,

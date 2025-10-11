@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from modbusampere import Modbusampere
 from display import Display
 from flowmeter import Flowmeter
+from raincounterthread import RainCounterThread
 
 load_dotenv("/home/ftp/modbus/.env")
 
@@ -35,6 +36,30 @@ class RTU:
         self.report_requested = False
         self.restart_requested = False
         self.update_requested = False
+
+        # === Rain Counter Thread ===
+        rain_sensor = None
+        rain_port = None
+        for device in self.config["devices"]:
+            if device["name"].lower() == "modbusampere":
+                for sensor in device["sensors"]:
+                    if sensor["name"].lower() == "rainfall":
+                        rain_sensor = sensor
+                        rain_port = device["port"]
+                        break
+
+        if rain_sensor:
+            self.rain_thread = RainCounterThread(
+                self.modbusampere,
+                rain_sensor,
+                rain_port,
+                mm_per_pulse=0.5,
+                realtime_interval=5,
+            )
+            print("Jalan ======== RAINFALL")
+            self.rain_thread.start()
+        else:
+            self.rain_thread = None
 
     def load_config(self, config_file):
         url = CONFIG_URL.format(DEVICE_LOCATION_ID)
@@ -194,6 +219,7 @@ class RTU:
                 "tss": 0.0,
                 "debit": 0.0,
                 "rainfall": 0.0,
+                "rainfall_daily": 0.0,
                 "water_height": 0.0,
                 "temperature": 0.0,
                 "humidity": 0.0,
@@ -206,6 +232,8 @@ class RTU:
                 "water_volume": 0.0,
             }
 
+            value_details = {}
+
             for device in self.config["devices"]:
                 port = device["port"]
                 for sensor in device["sensors"]:
@@ -214,20 +242,52 @@ class RTU:
                         if sensor["type"] == "4-20mA":
                             value = self.modbusampere.read_analog(sensor, port)
                         elif sensor["type"] == "digital_in":
-                            value = self.modbusampere.read_digital_inputs(sensor, port)
+                            if self.rain_thread and sensor["name"] == "rainfall":
+                                value_details = {
+                                    "realtime": self.rain_thread.rainfall_realtime,
+                                    "daily": self.rain_thread.rainfall_daily,
+                                    "hourly": self.rain_thread.rainfall_hourly,
+                                    "total": self.rain_thread.rainfall_total,
+                                    "unit": "mm",
+                                }
+                                value = self.rain_thread.rainfall_hourly
+                            else:
+                                value = self.modbusampere.read_digital_inputs(
+                                    sensor, port
+                                )
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"
                     ):
                         value = self.flowmeter.read_sensor_data(sensor, port)
 
-                    sensor_data = {
-                        sensor["name"]: {
-                            "sensor_type": sensor["type"],
-                            "unit": sensor.get("conversion", {}).get("unit", ""),
-                            "value": round(value, 1) if value is not None else "ERROR",
-                            "status": "OK" if value is not None else "error",
+                    sensor_data = {}
+
+                    if self.rain_thread:
+                        sensor_data = {
+                            sensor["name"]: {
+                                "sensor_type": sensor["type"],
+                                "unit": sensor.get("conversion", {}).get("unit", ""),
+                                "value": round(value_details["realtime"], 1)
+                                if value_details["realtime"] is not None
+                                else "ERROR",
+                                "status": "OK" if value is not None else "error",
+                                "values": value_details,
+                            }
                         }
-                    }
+
+                    else:
+                        sensor_data = {
+                            sensor["name"]: {
+                                "sensor_type": sensor["type"],
+                                "unit": sensor.get("conversion", {}).get("unit", ""),
+                                "value": round(value, 1)
+                                if value is not None
+                                else "ERROR",
+                                "status": "OK" if value is not None else "error",
+                                "value_details": value_details,
+                            }
+                        }
+
                     payload_mqtt["sensors"].append(sensor_data)
 
                     if value is not None and sensor["name"] in payload_api:

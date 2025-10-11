@@ -216,6 +216,7 @@ class RTU:
                 "tss": 0.0,
                 "debit": 0.0,
                 "rainfall": 0.0,
+                "rainfall_daily": 0.0,
                 "water_height": 0.0,
                 "temperature": 0.0,
                 "humidity": 0.0,
@@ -264,7 +265,7 @@ class RTU:
                                 "sensor_type": sensor["type"],
                                 "unit": sensor.get("conversion", {}).get("unit", ""),
                                 "value": round(value_details["realtime"], 1)
-                                if value is not None
+                                if value_details["realtime"] is not None
                                 else "ERROR",
                                 "status": "OK" if value is not None else "error",
                                 "values": value_details,
@@ -292,6 +293,15 @@ class RTU:
                             if isinstance(value, (int, float))
                             else int(value)
                         )
+
+                        if self.rain_thread:
+                            payload_api[sensor["rainfall_daily"]] = (
+                                round(self.rain_thread.rainfall_daily, 1)
+                                if isinstance(
+                                    self.rain_thread.rainfall_daily, (int, float)
+                                )
+                                else int(self.rain_thread.rainfall_daily)
+                            )
 
             print(payload_mqtt)
 

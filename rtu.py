@@ -248,9 +248,9 @@ class RTU:
                                 }
                                 value = self.rain_thread.rainfall_hourly
                             else:
-                                value = self.modbusampere.read_digital_inputs(
-                                    sensor, port
-                                )
+                                #value = self.modbusampere.read_digital_inputs(
+                                #    sensor, port
+                                #)
                     elif (
                         device["type"] == "direct_rs485" and device["name"] == "rs_rad"
                     ):

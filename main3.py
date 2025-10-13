@@ -241,7 +241,7 @@ try:
             # Pesan utama
             msg = (
                 f"🌱 <b>Data Kebun</b>\n"
-                f"🕒 <b>{timestamp}</b>\n"
+                f"🕒 <b>{timestamp.strftime('%d %B %Y %H:%M:%S')}</b>\n"
                 f"PH: {data.get('ph', 'N/A')}\n"
                 f"TDS: {data.get('tds', 'N/A')} ppm"
             )

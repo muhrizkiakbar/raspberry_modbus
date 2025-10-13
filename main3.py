@@ -230,12 +230,13 @@ try:
         timestamp = datetime.now().isoformat()
         payload = {"timestamp": timestamp, "data": data}
 
-        if time.time() - mqtt_timer >= 10:
+        if time.time() - mqtt_timer >= 5:
             client.publish(MQTT_BASE_TOPIC, json.dumps(payload), qos=MQTT_QOS)
         # ==============================
         # Pengiriman ke MQTT & Telegram setiap 15 menit
         # ==============================
-        if time.time() - mqtt_timer >= 600:  # 900 detik = 15 menit
+        # if time.time() - mqtt_timer >= 600:  # 900 detik = 15 menit
+        if time.time() - mqtt_timer >= 5:  # 900 detik = 15 menit
             print(f"📤 MQTT Publish → {MQTT_BASE_TOPIC}: {payload}")
 
             # Pesan utama

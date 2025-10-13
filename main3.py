@@ -223,13 +223,15 @@ try:
             else:
                 print(f"[AI_{i + 1}] ERROR: Respons tidak lengkap!")
 
-            time.sleep(10)
+            time.sleep(0.5)
+
+        display_message(oled_text)
 
         timestamp = datetime.now().isoformat()
         payload = {"timestamp": timestamp, "data": data}
-        client.publish(MQTT_BASE_TOPIC, json.dumps(payload), qos=MQTT_QOS)
-        display_message(oled_text)
 
+        if time.time() - mqtt_timer >= 10:
+            client.publish(MQTT_BASE_TOPIC, json.dumps(payload), qos=MQTT_QOS)
         # ==============================
         # Pengiriman ke MQTT & Telegram setiap 15 menit
         # ==============================

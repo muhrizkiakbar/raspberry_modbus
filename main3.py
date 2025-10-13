@@ -219,7 +219,7 @@ try:
         # Pengiriman ke MQTT tiap 15 menit
         # ==============================
         # if time.time() - mqtt_timer >= 900:  # 900 detik = 15 menit
-        if time.time() - mqtt_timer >= 100:  # 900 detik = 15 menit
+        if time.time() - mqtt_timer >= 10:  # 900 detik = 15 menit
             payload = {
                 "timestamp": datetime.now().isoformat(),
                 "data": data,

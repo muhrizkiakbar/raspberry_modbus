@@ -37,25 +37,49 @@ MQTT_PORT = 1883
 MQTT_BASE_TOPIC = "kebun"
 MQTT_COMMAND_TOPIC = "kebun/perintah"
 MQTT_CLIENT_ID = "kebun"
+MQTT_USERNAME = "griyasokaponik"
+MQTT_PASSWORD = "griyasokaponik2345"
 MQTT_QOS = 1
 
 client = mqtt.Client(client_id=MQTT_CLIENT_ID, clean_session=True)
+client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("[MQTT] Terhubung ke broker")
+        print("[MQTT] Terhubung ke broker ✅")
         client.subscribe(MQTT_COMMAND_TOPIC, qos=MQTT_QOS)
     else:
         print(f"[MQTT] Gagal terhubung, kode: {rc}")
 
 
+def on_disconnect(client, userdata, rc):
+    print(f"[MQTT] Terputus dari broker (kode {rc}), mencoba ulang...")
+    reconnect_mqtt()
+
+
 def on_message(client, userdata, msg):
-    print(f"[MQTT] Pesan diterima di {msg.topic}: {msg.payload.decode()}")
+    pesan = msg.payload.decode()
+    print(f"[MQTT] Pesan diterima di {msg.topic}: {pesan}")
+    # Jika ingin menampilkan perintah ke OLED:
+    display_message(f"CMD:\n{pesan}")
 
 
 client.on_connect = on_connect
+client.on_disconnect = on_disconnect
 client.on_message = on_message
+
+
+def reconnect_mqtt():
+    while True:
+        try:
+            print("[MQTT] Mencoba koneksi ulang...")
+            client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+            client.loop_start()
+            break
+        except Exception as e:
+            print(f"[MQTT] Gagal koneksi ulang: {e}")
+            time.sleep(5)
 
 
 def connect_mqtt():
@@ -139,7 +163,7 @@ def display_message(line1, top_margin=8, bottom_margin=8):
         print(f"OLED Display Error: {e}")
 
 
-# ========== FUNGSI BACA MODBUS ==========
+# ========== FUNGSI MODBUS ==========
 def read_analog_channel(slave_address, channel_address):
     frame = bytes(
         [
@@ -195,12 +219,11 @@ try:
             else:
                 print(f"[AI_{i + 1}] ERROR: Respons tidak lengkap!")
 
-            time.sleep(1)
+            time.sleep(0.2)
 
-        # Tampilkan di OLED
         display_message(oled_text)
 
-        # Kirim ke MQTT
+        # Kirim data ke MQTT
         if data_payload:
             mqtt_topic = f"{MQTT_BASE_TOPIC}/data"
             payload_json = json.dumps(data_payload)

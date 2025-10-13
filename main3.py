@@ -38,7 +38,7 @@ MQTT_BASE_TOPIC = "kebun"
 MQTT_COMMAND_TOPIC = "kebun/perintah"
 MQTT_CLIENT_ID = "kebun"
 MQTT_USERNAME = "griyasokaponik"
-MQTT_PASSWORD = "griyasokaponik2345"
+MQTT_PASSWORD = "griyasokaponik"
 MQTT_QOS = 1
 
 client = mqtt.Client(client_id=MQTT_CLIENT_ID, clean_session=True)
@@ -225,7 +225,7 @@ try:
 
         # Kirim data ke MQTT
         if data_payload:
-            mqtt_topic = f"{MQTT_BASE_TOPIC}/data"
+            mqtt_topic = f"{MQTT_BASE_TOPIC}"
             payload_json = json.dumps(data_payload)
             result = client.publish(mqtt_topic, payload_json, qos=MQTT_QOS)
             status = result.rc

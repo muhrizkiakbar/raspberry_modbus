@@ -2,13 +2,14 @@ import serial
 import crcmod
 import time
 import json
+import requests
 import paho.mqtt.client as mqtt
 from datetime import datetime
 import Adafruit_SSD1306
 from PIL import Image, ImageDraw, ImageFont
 
 # ==============================
-# Konfigurasi Port Serial
+# Konfigurasi Serial Modbus
 # ==============================
 ser = serial.Serial(
     port="/dev/ttyUSB0",
@@ -19,7 +20,6 @@ ser = serial.Serial(
     timeout=1,
 )
 
-# Fungsi CRC16 Modbus RTU
 crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
 
 # ==============================
@@ -32,7 +32,6 @@ oled.begin()
 oled.clear()
 oled.display()
 
-# Font
 font_path = "/home/pi/raspberry_modbus/fonts/Tahoma.ttf"
 font = ImageFont.truetype(font_path, 15)
 
@@ -48,7 +47,6 @@ def display_message(line1, top_margin=8, bottom_margin=8):
             current_line = []
             current_width = 0
             space_width = font.getlength(" ")
-
             for word in words:
                 word_width = font.getlength(word)
                 if word_width > max_width:
@@ -66,12 +64,10 @@ def display_message(line1, top_margin=8, bottom_margin=8):
                             current_line = [char]
                             current_width = char_width
                     continue
-
                 if current_line:
                     new_width = current_width + space_width + word_width
                 else:
                     new_width = word_width
-
                 if new_width <= max_width:
                     current_line.append(word)
                     current_width = new_width
@@ -79,7 +75,6 @@ def display_message(line1, top_margin=8, bottom_margin=8):
                     lines.append(" ".join(current_line))
                     current_line = [word]
                     current_width = word_width
-
             if current_line:
                 lines.append(" ".join(current_line))
             return lines
@@ -91,16 +86,13 @@ def display_message(line1, top_margin=8, bottom_margin=8):
 
         bbox = font.getbbox("A")
         char_height = bbox[3] - bbox[1]
-        total_text_height = len(all_lines) * char_height
         y_offset = top_margin
 
         for line_text in all_lines:
             text_width = font.getlength(line_text)
             x_offset = max(0, (OLED_WIDTH - text_width) // 2)
-
             if y_offset + char_height > OLED_HEIGHT - bottom_margin:
                 break
-
             draw.text((x_offset, y_offset), line_text, font=font, fill=255)
             y_offset += char_height
 
@@ -138,8 +130,8 @@ MQTT_BASE_TOPIC = "kebun"
 MQTT_COMMAND_TOPIC = "kebun/perintah"
 MQTT_QOS = 1
 MQTT_CLIENT_ID = "kebun"
-MQTT_USERNAME = "griyasokaponik"
-MQTT_PASSWORD = "griyasokaponik"
+MQTT_USERNAME = "kebun"
+MQTT_PASSWORD = "kebun12345"
 
 client = mqtt.Client(client_id=MQTT_CLIENT_ID)
 client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
@@ -162,6 +154,26 @@ client.on_message = on_message
 
 client.connect(MQTT_BROKER, MQTT_PORT, 60)
 client.loop_start()
+
+# ==============================
+# Konfigurasi Telegram
+# ==============================
+TELEGRAM_BOT_TOKEN = "8318168467:AAG4CqUrds4IqsZC9cOF7nxDsJ_fMxCrYso"
+TELEGRAM_CHAT_ID = "-4949880188"
+
+
+def send_telegram_message(message):
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "HTML"}
+        response = requests.post(url, data=payload, timeout=10)
+        if response.status_code == 200:
+            print("📨 Telegram message sent successfully")
+        else:
+            print(f"⚠️ Telegram error: {response.text}")
+    except Exception as e:
+        print(f"Telegram Error: {e}")
+
 
 # ==============================
 # Main Loop
@@ -200,7 +212,7 @@ try:
                         if current >= 4:
                             tds = (current - 4) * (2000 / 16)
                             data["tds"] = round(tds, 2)
-                            oled_text += f"\n -- \n TDS: {tds:.2f}"
+                            oled_text += f"\n -- \nTDS: {tds:.2f}"
                             print(f"→ TDS: {tds:.2f} PPm")
                         else:
                             print("→ Sensor tidak aktif (<4mA)")
@@ -216,16 +228,45 @@ try:
         display_message(oled_text)
 
         # ==============================
-        # Pengiriman ke MQTT tiap 15 menit
+        # Pengiriman ke MQTT & Telegram setiap 15 menit
         # ==============================
-        # if time.time() - mqtt_timer >= 900:  # 900 detik = 15 menit
-        if time.time() - mqtt_timer >= 10:  # 900 detik = 15 menit
-            payload = {
-                "timestamp": datetime.now().isoformat(),
-                "data": data,
-            }
+        if time.time() - mqtt_timer >= 900:  # 900 detik = 15 menit
+            timestamp = datetime.now().isoformat()
+            payload = {"timestamp": timestamp, "data": data}
             client.publish(MQTT_BASE_TOPIC, json.dumps(payload), qos=MQTT_QOS)
             print(f"📤 MQTT Publish → {MQTT_BASE_TOPIC}: {payload}")
+
+            # Pesan utama
+            msg = (
+                f"🌱 <b>Data Kebun</b>\n"
+                f"🕒 <b>{timestamp}</b>\n"
+                f"PH: {data.get('ph', 'N/A')}\n"
+                f"TDS: {data.get('tds', 'N/A')} ppm"
+            )
+
+            # Kirim pesan utama Telegram
+            send_telegram_message(msg)
+
+            # ==========================
+            # Warning PH
+            # ==========================
+            ph_value = data.get("ph")
+            if ph_value is not None:
+                if ph_value < 5.8:
+                    warning_msg = (
+                        f"⚠️ <b>PERINGATAN!</b>\n"
+                        f"Nilai pH rendah: {ph_value:.2f}\n"
+                        f"Tanaman berisiko kekurangan nutrisi!"
+                    )
+                    send_telegram_message(warning_msg)
+                elif ph_value > 6.5:
+                    warning_msg = (
+                        f"⚠️ <b>PERINGATAN!</b>\n"
+                        f"Nilai pH tinggi: {ph_value:.2f}\n"
+                        f"Tanaman berisiko kesulitan menyerap unsur mikro!"
+                    )
+                    send_telegram_message(warning_msg)
+
             mqtt_timer = time.time()
 
         time.sleep(2)

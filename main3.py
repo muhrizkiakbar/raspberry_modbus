@@ -130,8 +130,8 @@ MQTT_BASE_TOPIC = "kebun"
 MQTT_COMMAND_TOPIC = "kebun/perintah"
 MQTT_QOS = 1
 MQTT_CLIENT_ID = "kebun"
-MQTT_USERNAME = "kebun"
-MQTT_PASSWORD = "kebun12345"
+MQTT_USERNAME = "griyasokaponik"
+MQTT_PASSWORD = "griyasokaponik"
 
 client = mqtt.Client(client_id=MQTT_CLIENT_ID)
 client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)

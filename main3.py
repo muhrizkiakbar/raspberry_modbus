@@ -25,12 +25,12 @@ crc16 = crcmod.mkCrcFun(0x18005, rev=True, initCrc=0xFFFF, xorOut=0x0000)
 # ==============================
 # Konfigurasi OLED
 # ==============================
-OLED_WIDTH = 128
-OLED_HEIGHT = 64
-oled = Adafruit_SSD1306.SSD1306_128_64(rst=None)
-oled.begin()
-oled.clear()
-oled.display()
+# OLED_WIDTH = 128
+# OLED_HEIGHT = 64
+# oled = Adafruit_SSD1306.SSD1306_128_64(rst=None)
+# oled.begin()
+# oled.clear()
+# oled.display()
 
 font_path = "/home/pi/raspberry_modbus/fonts/Tahoma.ttf"
 font = ImageFont.truetype(font_path, 15)
@@ -38,8 +38,8 @@ font = ImageFont.truetype(font_path, 15)
 
 def display_message(line1, top_margin=8, bottom_margin=8):
     try:
-        image = Image.new("1", (OLED_WIDTH, OLED_HEIGHT))
-        draw = ImageDraw.Draw(image)
+        # image = Image.new("1", (OLED_WIDTH, OLED_HEIGHT))
+        # draw = ImageDraw.Draw(image)
 
         def wrap_text(text, font, max_width):
             words = text.split()
@@ -79,26 +79,26 @@ def display_message(line1, top_margin=8, bottom_margin=8):
                 lines.append(" ".join(current_line))
             return lines
 
-        all_lines = []
-        for original_line in line1.split("\n"):
-            wrapped_lines = wrap_text(original_line, font, OLED_WIDTH)
-            all_lines.extend(wrapped_lines)
+        # all_lines = []
+        # for original_line in line1.split("\n"):
+        # wrapped_lines = wrap_text(original_line, font, OLED_WIDTH)
+        # all_lines.extend(wrapped_lines)
 
-        bbox = font.getbbox("A")
-        char_height = bbox[3] - bbox[1]
-        y_offset = top_margin
+        # bbox = font.getbbox("A")
+        # char_height = bbox[3] - bbox[1]
+        # y_offset = top_margin
 
-        for line_text in all_lines:
-            text_width = font.getlength(line_text)
-            x_offset = max(0, (OLED_WIDTH - text_width) // 2)
-            if y_offset + char_height > OLED_HEIGHT - bottom_margin:
-                break
-            draw.text((x_offset, y_offset), line_text, font=font, fill=255)
-            y_offset += char_height
+        # for line_text in all_lines:
+        #    text_width = font.getlength(line_text)
+        #    x_offset = max(0, (OLED_WIDTH - text_width) // 2)
+        #    if y_offset + char_height > OLED_HEIGHT - bottom_margin:
+        #        break
+        #    draw.text((x_offset, y_offset), line_text, font=font, fill=255)
+        #    y_offset += char_height
 
-        image = image.rotate(180)
-        oled.image(image)
-        oled.display()
+        # image = image.rotate(180)
+        # oled.image(image)
+        # oled.display()
     except Exception as e:
         print(f"OLED Display Error: {e}")
 
@@ -225,7 +225,7 @@ try:
 
             time.sleep(0.5)
 
-        display_message(oled_text)
+        # display_message(oled_text)
 
         timestamp = datetime.now().isoformat()
         payload = {"timestamp": timestamp, "data": data}

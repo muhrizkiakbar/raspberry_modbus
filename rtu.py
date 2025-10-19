@@ -21,8 +21,9 @@ DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
 API_KEY = str(os.getenv("API_KEY", ""))
 MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
 MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
+RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", ""))
 
-VERSION = "1.0.9"
+VERSION = "1.0.10"
 
 
 class RTU:
@@ -53,10 +54,9 @@ class RTU:
                 self.modbusampere,
                 rain_sensor,
                 rain_port,
-                mm_per_pulse=0.5,
+                mm_per_pulse=RAINFALL_MM_PERPULSE,
                 realtime_interval=5,
             )
-            print("Jalan ======== RAINFALL")
             self.rain_thread.start()
         else:
             self.rain_thread = None

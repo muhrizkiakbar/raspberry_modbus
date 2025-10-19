@@ -16,7 +16,7 @@ class RainCounterThread(threading.Thread):
         sensor,
         port,
         save_path="/home/ftp/modbus/rain_counter.json",
-        mm_per_pulse=0.5,  # resolusi sensor (0.5 mm/pulse)
+        mm_per_pulse=0.2,  # resolusi sensor (0.5 mm/pulse)
         realtime_interval=5,  # interval realtime (detik)
         polling_ms=20,  # polling cepat (20 ms)
         debounce_ms=20,  # waktu debounce (20 ms)

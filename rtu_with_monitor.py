@@ -266,6 +266,7 @@ class RTU:
                     sensor_data = {}
 
                     if self.rain_thread and sensor["name"] == "rainfall":
+                        print("kena di rainfall")
                         sensor_data = {
                             sensor["name"]: {
                                 "sensor_type": sensor["type"],

@@ -21,7 +21,7 @@ DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
 API_KEY = str(os.getenv("API_KEY", ""))
 MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
 MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
-RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", ""))
+RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", 0.2))
 
 VERSION = "1.0.10"
 

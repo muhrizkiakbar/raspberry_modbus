@@ -259,7 +259,8 @@ class RTU:
 
                     sensor_data = {}
 
-                    if self.rain_thread:
+                    if self.rain_thread and sensor["name"] == "rainfall":
+                        print("kena di rainfall")
                         sensor_data = {
                             sensor["name"]: {
                                 "sensor_type": sensor["type"],
@@ -294,7 +295,7 @@ class RTU:
                             else int(value)
                         )
 
-                        if self.rain_thread:
+                        if self.rain_thread and sensor["name"] == "rainfall":
                             payload_api[sensor["rainfall_daily"]] = (
                                 round(self.rain_thread.rainfall_daily, 1)
                                 if isinstance(
@@ -311,9 +312,9 @@ class RTU:
             )
 
             # Kirim ke API jika ada perintah report
-            # if self.report_requested:
-            #    self.send_telemetry(payload_api)
-            #    self.report_requested = False
+            if self.report_requested:
+                self.send_telemetry(payload_api)
+                self.report_requested = False
 
             time.sleep(5)
 

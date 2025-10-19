@@ -241,9 +241,7 @@ class RTU:
                     if device["type"] == "modbus":
                         print(sensor)
                         if sensor["type"] == "4-20mA":
-                            print("sensor 4-20")
                             value = self.modbusampere.read_analog(sensor, port)
-                            print(value)
                         elif sensor["type"] == "digital_in":
                             if self.rain_thread and sensor["name"] == "rainfall":
                                 value_details = {
@@ -301,13 +299,20 @@ class RTU:
                             else int(value)
                         )
 
+                        if self.rain_thread and sensor["name"] == "rainfall":
+                            payload_api[sensor["rainfall_daily"]] = (
+                                round(self.rain_thread.rainfall_daily, 1)
+                                if isinstance(
+                                    self.rain_thread.rainfall_daily, (int, float)
+                                )
+                                else int(self.rain_thread.rainfall_daily)
+                            )
+
             print(payload_mqtt)
+
             if payload_mqtt["sensors"]:
                 page_count = (len(payload_mqtt["sensors"]) + 5) // 6
 
-                print("****************************************")
-                print(payload_mqtt["sensors"])
-                print("****************************************")
                 self.display.display_sensor_page(
                     payload_mqtt["sensors"], current_page, time_left
                 )

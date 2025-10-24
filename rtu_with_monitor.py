@@ -23,6 +23,7 @@ API_KEY = str(os.getenv("API_KEY", ""))
 MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
 MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
 RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", 0.2))
+SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
 
 VERSION = "1.0.10"
 
@@ -72,7 +73,9 @@ class RTU:
         }
         try:
             print(f"Ambil config dari API: {url}")
-            response = requests.get(url, headers=headers, verify=False, timeout=10)
+            response = requests.get(
+                url, headers=headers, verify=SSL_CERT_PATH, timeout=10
+            )
             response.raise_for_status()
             config = response.json()
             print("Berhasil ambil config dari API")
@@ -129,44 +132,6 @@ class RTU:
             self.update_requested = True
 
     def send_telemetry(self, payload_api):
-        # Root CA Certificate
-        root_ca_cert = """-----BEGIN CERTIFICATE-----
-            MIIGVzCCBT+gAwIBAgIMJUTYmj7dgxnQ27KzMA0GCSqGSIb3DQEBCwUAMFUxCzAJ
-            BgNVBAYTAkJFMRkwFwYDVQQKExBHbG9iYWxTaWduIG52LXNhMSswKQYDVQQDEyJH
-            bG9iYWxTaWduIEdDQyBSNiBBbHBoYVNTTCBDQSAyMDIzMB4XDTI1MDUyNzExNTIx
-            NloXDTI2MDYyODExNTIxNVowHTEbMBkGA1UEAxMSdGVsZW1ldHJ5LWFkYXJvLmlk
-            MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlV4BLTISN4HpOwKcc6Ah
-            RbpclfwIeA10m7IoEegQ1t3VCTfo8ZuDBnJHUdvS7IONS50g+8Ry4lwSfo0eE8Jz
-            zokDGHwM382/KndzPqndsI1Hp5M0971jOFHv81un+crDPHsExpzkW/jI+5ZiFgzb
-            sNSzyiRoLIzITNWP2HvjWth012H+NkCVeaoMvjFIm9fLUkpQzrVL23tttF1Aee/z
-            2FCJE4B2SWB3tR8ynaZZeCee8BRXmGtRPMYCCXowA4Xi/yKbM8l6BwimfRwXqFfb
-            ovIr6LLNKeR+8UDKlcib7h2eYT/Qwvj12pCNhXlZKkf+PK/jVNNt50ncl1QRtez1
-            KwIDAQABo4IDXTCCA1kwDgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAwgZkG
-            CCsGAQUFBwEBBIGMMIGJMEkGCCsGAQUFBzAChj1odHRwOi8vc2VjdXJlLmdsb2Jh
-            bHNpZ24uY29tL2NhY2VydC9nc2djY3I2YWxwaGFzc2xjYTIwMjMuY3J0MDwGCCsG
-            AQUFBzABhjBodHRwOi8vb2NzcC5nbG9iYWxzaWduLmNvbS9nc2djY3I2YWxwaGFz
-            c2xjYTIwMjMwVwYDVR0gBFAwTjAIBgZngQwBAgEwQgYKKwYBBAGgMgoBAzA0MDIG
-            CCsGAQUFBwIBFiZodHRwczovL3d3dy5nbG9iYWxzaWduLmNvbS9yZXBvc2l0b3J5
-            LzBEBgNVHR8EPTA7MDmgN6A1hjNodHRwOi8vY3JsLmdsb2JhbHNpZ24uY29tL2dz
-            Z2NjcjZhbHBoYXNzbGNhMjAyMy5jcmwwHQYDVR0RBBYwFIISdGVsZW1ldHJ5LWFk
-            YXJvLmlkMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAfBgNVHSMEGDAW
-            gBS9BbfzipM8c8t5+g+FEqF3lhiRdDAdBgNVHQ4EFgQUit2RzsDBNP4z6y8qbLzZ
-            CILQodowggF+BgorBgEEAdZ5AgQCBIIBbgSCAWoBaAB3ABmG1Mcoqm/+ugNveCpN
-            AZGqzi1yMQ+uzl1wQS0lTMfUAAABlxGWH8sAAAQDAEgwRgIhAM3mfIxWa7//bJOk
-            Ggglpc2j1NtnB94jsh30SPPYyuYAAiEAsggqxRyb8VVuISdaVxRebt/RMvcXOqWq
-            1F39Atyit/IAdQDLOPcViXyEoURfW8Hd+8lu8ppZzUcKaQWFsMsUwxRY5wAAAZcR
-            lh/KAAAEAwBGMEQCIEcMJfrsDXoepgEqsjGYp7Mw4OEaqOvPiKUcFlQqRplNAiAX
-            Gy6p+QNxhaqOkeixwCcE394rou7qFlmGdo59bd0SigB2ACUvlMIrKelun0Eacgcr
-            aVxbUv+XqQ0lQLv83FHsTe4LAAABlxGWIRsAAAQDAEcwRQIhAOKX7mfik/1McLq8
-            aidryEB9PJbLHnRHda/C8rpoQvVeAiBGmyhYsUAZtonmerye9Hyl6jpKoN5IhTp5
-            +7r9mJKN8zANBgkqhkiG9w0BAQsFAAOCAQEAsGrhSzfw4wIq1sWaVvNXrXHaDv24
-            cAMeMTqrSNg4VL/DYv5mlT2IQK+L7HllubaSh1h7pERy/u1kFvjDbksDVGiZe/rG
-            6+n/jNO0t7zPD4VFsy5Ic+Qd1Wdla4KzM+f0xTwITIZMJdq+DOTST7VbGNOiaLS/
-            lwllnoXbozJqz4NAlkcgVmkBo8NQaGOfn0jY2NP7YzPoZVRLNcYhw7b5zZKPdBCx
-            1pAs81HK6eLGnCHCh71yWVoENxHzkreMUX+Ts/Vk9SP7VXmUXKQg9XKW0jjSvgsw
-            g6AzbcEBUC/PvY6XkJF1NLf7pGi8g18KAM+yhsDTj35HJln6qlHqYNNpgA==
-            -----END CERTIFICATE-----
-            """
         try:
             headers = {
                 "X-API-KEY": API_KEY,
@@ -174,16 +139,9 @@ class RTU:
                 "Accept": "application/json",
             }
 
-            # Simpan sementara sertifikat ke file
-            with tempfile.NamedTemporaryFile(
-                delete=False, mode="w", suffix=".crt"
-            ) as ca_file:
-                ca_file.write(root_ca_cert)
-                ca_cert_path = ca_file.name
-
             # Gunakan verify untuk memverifikasi SSL dengan root CA ini
             response = requests.post(
-                TELEMETRY_URL, json=payload_api, headers=headers, verify=ca_cert_path
+                TELEMETRY_URL, json=payload_api, headers=headers, verify=SSL_CERT_PATH
             )
 
             if response.status_code == 200:

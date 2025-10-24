@@ -70,7 +70,7 @@ class RTU:
         }
         try:
             print(f"Ambil config dari API: {url}")
-            response = requests.get(url, headers=headers, verify="cert.pem", timeout=10)
+            response = requests.get(url, headers=headers, verify=False, timeout=10)
             response.raise_for_status()
             config = response.json()
             print("Berhasil ambil config dari API")
@@ -178,7 +178,7 @@ class RTU:
 
             # Gunakan verify untuk memverifikasi SSL dengan root CA ini
             response = requests.post(
-                TELEMETRY_URL, json=payload_api, headers=headers, verify=ca_cert_path
+                TELEMETRY_URL, json=payload_api, headers=headers, verify=False
             )
 
             if response.status_code == 200:

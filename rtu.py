@@ -182,7 +182,7 @@ class RTU:
 
             # Gunakan verify untuk memverifikasi SSL dengan root CA ini
             response = requests.post(
-                TELEMETRY_URL, json=payload_api, headers=headers, verify=False
+                TELEMETRY_URL, json=payload_api, headers=headers, verify=ca_cert_path
             )
 
             if response.status_code == 200:

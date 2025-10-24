@@ -13,6 +13,9 @@ from display import Display
 from flowmeter import Flowmeter
 from raincounterthread import RainCounterThread
 import tempfile
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 load_dotenv("/home/ftp/modbus/.env")
 
@@ -73,9 +76,7 @@ class RTU:
         }
         try:
             print(f"Ambil config dari API: {url}")
-            response = requests.get(
-                url, headers=headers, verify=SSL_CERT_PATH, timeout=10
-            )
+            response = requests.get(url, headers=headers, verify=False, timeout=10)
             response.raise_for_status()
             config = response.json()
             print("Berhasil ambil config dari API")
@@ -141,7 +142,7 @@ class RTU:
 
             # Gunakan verify untuk memverifikasi SSL dengan root CA ini
             response = requests.post(
-                TELEMETRY_URL, json=payload_api, headers=headers, verify=SSL_CERT_PATH
+                TELEMETRY_URL, json=payload_api, headers=headers, verify=False
             )
 
             if response.status_code == 200:

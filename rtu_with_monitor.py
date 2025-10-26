@@ -203,9 +203,7 @@ class RTU:
 
                         # Restart service modbus
                         print("Restart service modbus...")
-                        subprocess.run(
-                            ["sudo", "systemctl", "restart", "modbus"], check=True
-                        )
+                        subprocess.run(["sudo", "reboot"], check=True)
                         print("Service modbus berhasil direstart")
                         break  # keluar loop agar service restart sempurna
                     else:
@@ -346,6 +344,7 @@ class RTU:
             time.sleep(5)
 
         print("Restart requested, keluar loop")
+        subprocess.run(["sudo", "reboot"], check=True)
 
 
 if __name__ == "__main__":

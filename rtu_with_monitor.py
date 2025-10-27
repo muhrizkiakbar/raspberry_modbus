@@ -309,7 +309,7 @@ class RTU:
                         )
 
                         if self.rain_thread and sensor["name"] == "rainfall":
-                            payload_api[sensor["rainfall_daily"]] = (
+                            payload_api["rainfall_daily"] = (
                                 round(self.rain_thread.rainfall_daily, 1)
                                 if isinstance(
                                     self.rain_thread.rainfall_daily, (int, float)

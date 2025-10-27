@@ -1,5 +1,6 @@
 import minimalmodbus
 import serial
+import threading
 
 
 class Modbusampere:
@@ -7,6 +8,7 @@ class Modbusampere:
         self.ser_ports = ser_ports
         self.config = config
         self.instruments = {}
+        self.lock = threading.Lock()
 
         for device in config["devices"]:
             if "modbusampere" in device["name"].lower():
@@ -31,7 +33,8 @@ class Modbusampere:
         key = f"{port}_{slave_addr}"
         instr = self.instruments[key]
         try:
-            values = instr.read_registers(0, 6, functioncode=3)
+            with self.lock:  # 🔒 hanya 1 thread yang bisa akses saat ini
+                values = instr.read_registers(0, 6, functioncode=3)
             raw = values[channel]
             current_ma = raw * 20.0 / 4095.0
             conv = sensor["conversion"]
@@ -50,7 +53,8 @@ class Modbusampere:
         key = f"{port}_{slave_addr}"
         instr = self.instruments[key]
         try:
-            bits = instr.read_bits(0, 4, functioncode=2)
+            with self.lock:  # 🔒 gunakan lock di sini juga
+                bits = instr.read_bits(0, 4, functioncode=2)
             return bool(bits[channel])
         except Exception as e:
             print(f"Error baca DI {sensor['name']}: {e}")

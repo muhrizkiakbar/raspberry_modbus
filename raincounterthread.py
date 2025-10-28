@@ -104,7 +104,7 @@ class RainCounterThread(threading.Thread):
                 print("[RainCounter] Reset daily rainfall.")
 
             # Reset saat masuk jam baru
-            if now.hour != self.last_hour:
+            if now.hour != self.last_hour and now.minute >= 5:
                 print(
                     f"[RainCounter] Hourly reset. Previous hour total: "
                     f"{self.hourly_count * self.mm_per_pulse:.2f} mm"

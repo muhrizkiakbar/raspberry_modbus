@@ -5,7 +5,6 @@ import paho.mqtt.client as mqtt
 import os
 import sys
 import subprocess
-from datetime import datetime
 import requests
 from dotenv import load_dotenv
 from modbusampere import Modbusampere
@@ -14,6 +13,11 @@ from flowmeter import Flowmeter
 from raincounterthread import RainCounterThread
 import tempfile
 import urllib3
+
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo("Asia/Makassar")
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -215,7 +219,7 @@ class RTU:
 
             payload_mqtt = {
                 "timestamp": time.time(),
-                "timestamp_humanize": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "timestamp_humanize": datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S"),
                 "device_location_id": DEVICE_LOCATION_ID,
                 "sensors": [],
                 "version": VERSION,

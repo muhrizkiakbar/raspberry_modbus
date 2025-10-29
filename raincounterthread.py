@@ -1,7 +1,10 @@
 import threading
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo("Asia/Makassar")
 
 
 class RainCounterThread(threading.Thread):
@@ -43,9 +46,10 @@ class RainCounterThread(threading.Thread):
         self.hourly_count = 0
 
         # Tracking waktu
+        now = datetime.now(TZ)
         self.last_state = False
-        self.last_day = datetime.now().day
-        self.last_hour = datetime.now().hour
+        self.last_day = now.day
+        self.last_hour = now.hour
         self.last_realtime = time.time()
 
         # Load data sebelumnya
@@ -76,7 +80,7 @@ class RainCounterThread(threading.Thread):
                         "hourly_count": self.hourly_count,
                         "hourly_mm": round(self.hourly_count * self.mm_per_pulse, 2),
                         "hour": self.last_hour,
-                        "updated": datetime.now().isoformat(),
+                        "updated": datetime.now(TZ).isoformat(),
                     },
                     f,
                     indent=2,
@@ -91,7 +95,7 @@ class RainCounterThread(threading.Thread):
         print("[RainCounter] Thread started. (active LOW, 0.5 mm/pulse)")
 
         while self.running:
-            now = datetime.now()
+            now = datetime.now(TZ)
             t = time.time()
 
             # Reset harian setiap tengah malam

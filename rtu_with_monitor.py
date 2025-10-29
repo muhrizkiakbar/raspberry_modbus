@@ -28,7 +28,7 @@ MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
 RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", 0.2))
 SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
 
-VERSION = "1.0.13"
+VERSION = "1.0.14"
 
 
 class RTU:

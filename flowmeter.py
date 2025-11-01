@@ -3,6 +3,7 @@ import crcmod
 import time
 import struct
 import minimalmodbus
+import threading
 
 
 class Flowmeter:
@@ -11,6 +12,7 @@ class Flowmeter:
         self.ser_ports = ser_ports
         self.instruments = {}
         self.last_key = ""
+        self.lock = threading.Lock()
 
         for device in config["devices"]:
             if (
@@ -45,37 +47,38 @@ class Flowmeter:
         """Baca semua data sensor"""
         instr = self.instruments[self.last_key]
 
-        if sensor["name"] == "water_height":
-            try:
-                # Register 1003 = current water level (permukaan air→dasar penampang, mm)
-                depth_info = instr.read_register(1003, 0, functioncode=3)
-                if depth_info:
-                    # will return mm
-                    return depth_info
-            except Exception as e:
-                print("❌ Gagal baca Water Level:", e)
+        with self.lock:  # 🔒 hanya 1 thread yang bisa akses saat ini
+            if sensor["name"] == "water_height":
+                try:
+                    # Register 1003 = current water level (permukaan air→dasar penampang, mm)
+                    depth_info = instr.read_register(1003, 0, functioncode=3)
+                    if depth_info:
+                        # will return mm
+                        return depth_info
+                except Exception as e:
+                    print("❌ Gagal baca Water Level:", e)
 
-        if sensor["name"] == "velocity":
-            try:
-                # Velocity (0x03EC = 1004) -> cm/s
-                velocity_cms = instr.read_register(1004, 0, functioncode=3)
-                # will return cms
-                # data["velocity_cms"] = velocity_cms
-                return velocity_cms
-                # will return ms
-                # data["velocity_ms"] = velocity_cms / 100.0
-            except Exception as e:
-                print("❌ Gagal baca Velocity:", e)
+            if sensor["name"] == "velocity":
+                try:
+                    # Velocity (0x03EC = 1004) -> cm/s
+                    velocity_cms = instr.read_register(1004, 0, functioncode=3)
+                    # will return cms
+                    # data["velocity_cms"] = velocity_cms
+                    return velocity_cms
+                    # will return ms
+                    # data["velocity_ms"] = velocity_cms / 100.0
+                except Exception as e:
+                    print("❌ Gagal baca Velocity:", e)
 
-        if sensor["name"] == "debit":
-            try:
-                # Instantaneous Flow (0x03EA = 1002) -> m³/s * 1000
-                flow_raw = instr.read_register(1002, 0, functioncode=3)
-                # will return m3s
-                # data["flow_m3s"] = flow_raw / 1000.0
-                return flow_raw / 1000.0
-            except Exception as e:
-                print("❌ Gagal baca Flow:", e)
+            if sensor["name"] == "debit":
+                try:
+                    # Instantaneous Flow (0x03EA = 1002) -> m³/s * 1000
+                    flow_raw = instr.read_register(1002, 0, functioncode=3)
+                    # will return m3s
+                    # data["flow_m3s"] = flow_raw / 1000.0
+                    return flow_raw / 1000.0
+                except Exception as e:
+                    print("❌ Gagal baca Flow:", e)
 
     def set_section_config(self, instr, section_parameters):
         """Konfigurasi penampang trapezoid sesuai data Anda"""

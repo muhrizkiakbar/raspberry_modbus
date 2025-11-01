@@ -48,7 +48,7 @@ class Flowmeter:
             try:
                 # Register 1003 = current water level (permukaan air→dasar penampang, mm)
                 depth_info = instr.read_register(1003, 0, functioncode=3)
-
+                if depth_info:
                     # will return mm
                     return depth_info
             except Exception as e:

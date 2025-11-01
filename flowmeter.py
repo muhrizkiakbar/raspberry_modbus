@@ -38,7 +38,7 @@ class Flowmeter:
                 instr.serial.bytesize = ser_ports[port].bytesize
                 instr.serial.parity = ser_ports[port].parity
                 instr.serial.stopbits = ser_ports[port].stopbits
-                instr.serial.timeout = 4
+                instr.serial.timeout = 2
                 instr.mode = minimalmodbus.MODE_RTU
                 self.last_key = key
                 self.instruments[key] = instr

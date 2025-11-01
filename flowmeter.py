@@ -25,6 +25,10 @@ class Flowmeter:
                 for sensor in device["sensors"]:
                     slave_addr = sensor["slave_address"]
                     key = f"{port}"
+                    print("======================================")
+                    print(port)
+                    print(key)
+                    print("======================================")
                     if key not in self.instruments:
                         instr = minimalmodbus.Instrument(port, slave_addr)
                         instr.serial.baudrate = ser_ports[port].baudrate

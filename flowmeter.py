@@ -17,6 +17,10 @@ class Flowmeter:
                 "rs_rad" in device["name"].lower()
                 and "direct_rs485" in device["type"].lower()
             ):
+                print("======================================")
+                print(device["type"])
+                print(device["name"])
+                print("======================================")
                 port = device["port"]
                 for sensor in device["sensors"]:
                     slave_addr = sensor["slave_address"]

@@ -56,14 +56,14 @@ class Flowmeter:
             elapsed = current_time - self.current_time
 
             # Cek apakah sudah lewat 1 menit sejak update terakhir
-            if elapsed < 60:
-                # Belum lewat 1 menit, kembalikan nilai terakhir saja
-                if sensor["name"] == "water_height":
-                    return self.current_water_height
-                elif sensor["name"] == "velocity":
-                    return self.current_velocity
-                elif sensor["name"] == "debit":
-                    return self.current_debit
+            # if elapsed < 60:
+            # Belum lewat 1 menit, kembalikan nilai terakhir saja
+            #    if sensor["name"] == "water_height":
+            #        return self.current_water_height
+            #    elif sensor["name"] == "velocity":
+            #        return self.current_velocity
+            #    elif sensor["name"] == "debit":
+            #        return self.current_debit
 
             # Jika sudah lewat 1 menit → baca ulang
             try:

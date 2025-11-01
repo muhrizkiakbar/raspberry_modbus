@@ -34,6 +34,9 @@ class Flowmeter:
                 self.last_key = key
                 self.instruments[key] = instr
 
+                print("======================================")
+                print(self.instruments)
+                print("======================================")
                 self.set_section_config(
                     self.instruments[self.last_key], device["section_parameters"]
                 )

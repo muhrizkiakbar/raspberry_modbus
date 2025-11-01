@@ -35,12 +35,11 @@ class Flowmeter:
                         instr.mode = minimalmodbus.MODE_RTU
                         self.last_key = key
                         self.instruments[key] = instr
+                        print(self.instruments)
 
                 self.set_section_config(
                     self.instruments[self.last_key], device["section_parameters"]
                 )
-
-        print(self.last_key)
 
     def read_sensor_data(self, sensor, port):
         """Baca semua data sensor"""

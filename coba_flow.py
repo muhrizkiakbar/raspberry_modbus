@@ -1,7 +1,7 @@
 import minimalmodbus
 
 # Inisialisasi RS485 Modbus RTU
-instrument = minimalmodbus.Instrument("/dev/ttyUSB0", 1)  # (port, slave address)
+instrument = minimalmodbus.Instrument("/dev/ttyUSB1", 1)  # (port, slave address)
 instrument.serial.baudrate = 4800  # sesuaikan dengan sensor (default bisa 4800/9600)
 instrument.serial.bytesize = 8
 instrument.serial.parity = "N"
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     print("✅ Terhubung ke sensor RS-RAD-N01-3")
 
     # Contoh Rectangle (size1tinggi=200mm, size3dasar=450mm)
-    set_section_config(section_type=1, size1=2800, size2=1000, size3=9600)
+    set_section_config(section_type=1, size1=1300, size2=750, size3=6000)
 
     sensor_data = read_sensor_data()
     print("📡 Data Sensor:", sensor_data)

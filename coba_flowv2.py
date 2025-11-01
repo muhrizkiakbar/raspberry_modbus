@@ -1,7 +1,7 @@
 import minimalmodbus
 
 # Inisialisasi RS485 Modbus RTU
-instrument = minimalmodbus.Instrument("/dev/ttyUSB0", 1)
+instrument = minimalmodbus.Instrument("/dev/ttyUSB1", 1)
 instrument.serial.baudrate = 4800
 instrument.serial.bytesize = 8
 instrument.serial.parity = "N"
@@ -68,24 +68,24 @@ def set_section_config():
     """Konfigurasi penampang trapezoid sesuai data Anda"""
     try:
         # Section type: 1=Trapezoid
-        instrument.write_register(1042, 2, functioncode=6)
+        instrument.write_register(1042, 1, functioncode=6)
 
         # Section parameters untuk trapezoid
         # Size1 = tinggi saluran = 2800 mm
         # instrument.write_register(1043, 2500, functioncode=6)
-        instrument.write_register(1043, 450, functioncode=6)
+        instrument.write_register(1043, 6000, functioncode=6)
 
         # Size2 = lebar slope = 1000 mm
         # instrument.write_register(1044, 1000, functioncode=6)
-        instrument.write_register(1044, 0, functioncode=6)
+        instrument.write_register(1044, 750, functioncode=6)
 
         # Size3 = lebar dasar = 9600 mm
-        instrument.write_register(1045, 450, functioncode=6)
+        instrument.write_register(1045, 4500, functioncode=6)
 
         # Water level range (jarak sensor→dasar)
         # Sensor ke penampang atas = 700mm, tinggi penampang 2800mm
         # Jadi sensor→dasar = 700 + 2800 = 3500mm
-        instrument.write_register(1058, 950, functioncode=6)
+        instrument.write_register(1058, 2300, functioncode=6)
 
         print("✅ Trapezoid configured: Tinggi=2800mm, Slope=1000mm, Dasar=9600mm")
         print("✅ Water level range set to 3500mm (sensor→dasar)")

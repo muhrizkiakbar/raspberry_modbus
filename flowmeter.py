@@ -60,8 +60,8 @@ class Flowmeter:
             last_time = self.sensor_data[name]["time"]
 
             # kalau belum 60 detik, return cached value
-            # if now - last_time < 60:
-            #    return self.sensor_data[name]["value"]
+            if now - last_time < 60:
+                return self.sensor_data[name]["value"]
 
             # sudah lewat 60 detik -> baca ulang
             try:
@@ -69,18 +69,25 @@ class Flowmeter:
                     depth_info = instr.read_register(1003, 0, functioncode=3)
                     if depth_info:
                         val = depth_info / 1000.0
+                        if val == 0:
+                            return self.sensor_data[name]["value"]
+
                         self.sensor_data[name] = {"value": val, "time": now}
                         return val
 
                 elif name == "velocity":
                     velocity_cms = instr.read_register(1004, 0, functioncode=3)
                     val = velocity_cms
+                    if val == 0:
+                        return self.sensor_data[name]["value"]
                     self.sensor_data[name] = {"value": val, "time": now}
                     return val
 
                 elif name == "debit":
                     flow_raw = instr.read_register(1002, 0, functioncode=3)
                     val = flow_raw / 1000.0
+                    if val == 0:
+                        return self.sensor_data[name]["value"]
                     self.sensor_data[name] = {"value": val, "time": now}
                     return val
 

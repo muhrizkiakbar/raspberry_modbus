@@ -22,27 +22,23 @@ class Flowmeter:
                 print(device["name"])
                 print("======================================")
                 port = device["port"]
-                for sensor in device["sensors"]:
-                    slave_addr = sensor["slave_address"]
-                    key = f"{port}"
-                    print("======================================")
-                    print(port)
-                    print(key)
-                    print("======================================")
-                    if key not in self.instruments:
-                        instr = minimalmodbus.Instrument(port, slave_addr)
-                        instr.serial.baudrate = ser_ports[port].baudrate
-                        instr.serial.bytesize = ser_ports[port].bytesize
-                        instr.serial.parity = ser_ports[port].parity
-                        instr.serial.stopbits = ser_ports[port].stopbits
-                        instr.serial.timeout = 1
-                        instr.mode = minimalmodbus.MODE_RTU
-                        self.last_key = key
-                        self.instruments[key] = instr
+                slave_addr = 1
+                key = f"{port}"
+                instr = minimalmodbus.Instrument(port, slave_addr)
+                instr.serial.baudrate = ser_ports[port].baudrate
+                instr.serial.bytesize = ser_ports[port].bytesize
+                instr.serial.parity = ser_ports[port].parity
+                instr.serial.stopbits = ser_ports[port].stopbits
+                instr.serial.timeout = 1
+                instr.mode = minimalmodbus.MODE_RTU
+                self.last_key = key
+                self.instruments[key] = instr
 
                 self.set_section_config(
                     self.instruments[self.last_key], device["section_parameters"]
                 )
+
+                break
 
     def read_sensor_data(self, sensor, port):
         """Baca semua data sensor"""

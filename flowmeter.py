@@ -37,9 +37,7 @@ class Flowmeter:
                 print("======================================")
                 print(self.instruments)
                 print("======================================")
-                self.set_section_config(
-                    self.instruments[self.last_key], device["section_parameters"]
-                )
+                self.set_section_config(instr, device["section_parameters"])
 
                 break
 
@@ -79,10 +77,9 @@ class Flowmeter:
             except Exception as e:
                 print("❌ Gagal baca Flow:", e)
 
-    def set_section_config(self, key, section_parameters):
+    def set_section_config(self, instr, section_parameters):
         """Konfigurasi penampang trapezoid sesuai data Anda"""
         try:
-            instr = self.instruments[key]
             print("=========================instr")
             print(instr)
             print("=========================instr")

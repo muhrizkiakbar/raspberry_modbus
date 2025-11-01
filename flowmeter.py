@@ -88,6 +88,15 @@ class Flowmeter:
                     self.current_debit = value
                     self.current_time = current_time
                     return value
+            except Exception as e:
+                print(f"❌ Gagal baca {sensor['name']}:", e)
+                # Kembalikan nilai terakhir jika error
+                if sensor["name"] == "water_height":
+                    return self.current_water_height
+                elif sensor["name"] == "velocity":
+                    return self.current_velocity
+                elif sensor["name"] == "debit":
+                    return self.current_debit
 
     def set_section_config(self, instr, section_parameters):
         """Konfigurasi penampang trapezoid sesuai data Anda"""

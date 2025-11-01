@@ -40,6 +40,8 @@ class Flowmeter:
                     self.instruments[self.last_key], device["section_parameters"]
                 )
 
+        print(self.last_key)
+
     def read_sensor_data(self, sensor, port):
         """Baca semua data sensor"""
         instr = self.instruments[self.last_key]

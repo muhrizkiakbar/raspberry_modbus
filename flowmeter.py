@@ -35,7 +35,6 @@ class Flowmeter:
                         instr.mode = minimalmodbus.MODE_RTU
                         self.last_key = key
                         self.instruments[key] = instr
-                        print(self.instruments)
 
                 self.set_section_config(
                     self.instruments[self.last_key], device["section_parameters"]
@@ -49,7 +48,7 @@ class Flowmeter:
             try:
                 # Register 1003 = current water level (permukaan air→dasar penampang, mm)
                 depth_info = instr.read_register(1003, 0, functioncode=3)
-                if depth_info:
+
                     # will return mm
                     return depth_info
             except Exception as e:
@@ -81,6 +80,9 @@ class Flowmeter:
         """Konfigurasi penampang trapezoid sesuai data Anda"""
         try:
             instr = self.instruments[key]
+            print("=========================instr")
+            print(instr)
+            print("=========================instr")
 
             # Section type: 1=Trapezoid
             instr.write_register(

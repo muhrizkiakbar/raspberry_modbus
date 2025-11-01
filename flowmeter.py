@@ -14,12 +14,6 @@ class Flowmeter:
         self.last_key = ""
         self.lock = threading.Lock()
 
-        # Tambahkan atribut baru untuk menyimpan data terakhir
-        self.current_debit = None
-        self.current_water_height = None
-        self.current_velocity = None
-        self.current_time = 0  # epoch time (waktu terakhir update)
-
         for device in config["devices"]:
             if (
                 "rs_rad" in device["name"].lower()
@@ -54,52 +48,37 @@ class Flowmeter:
         instr = self.instruments[self.last_key]
 
         with self.lock:  # 🔒 hanya 1 thread yang bisa akses saat ini
-            current_time = time.time()
-            elapsed = current_time - self.current_time
-
-            # Cek apakah sudah lewat 1 menit sejak update terakhir
-            if elapsed < 60:
-                # Belum lewat 1 menit, kembalikan nilai terakhir saja
-                if sensor["name"] == "water_height":
-                    return self.current_water_height
-                elif sensor["name"] == "velocity":
-                    return self.current_velocity
-                elif sensor["name"] == "debit":
-                    return self.current_debit
-
-            # Jika sudah lewat 1 menit → baca ulang
-            try:
-                if sensor["name"] == "water_height":
+            if sensor["name"] == "water_height":
+                try:
+                    # Register 1003 = current water level (permukaan air→dasar penampang, mm)
                     depth_info = instr.read_register(1003, 0, functioncode=3)
                     if depth_info:
-                        value = depth_info / 1000.0
-                        self.current_water_height = value
-                        self.current_time = current_time
-                        return value
+                        # will return mm
+                        return depth_info / 1000
+                except Exception as e:
+                    print("❌ Gagal baca Water Level:", e)
 
-                elif sensor["name"] == "velocity":
+            if sensor["name"] == "velocity":
+                try:
+                    # Velocity (0x03EC = 1004) -> cm/s
                     velocity_cms = instr.read_register(1004, 0, functioncode=3)
-                    value = velocity_cms
-                    self.current_velocity = value
-                    self.current_time = current_time
-                    return value
+                    # will return cms
+                    # data["velocity_cms"] = velocity_cms
+                    return velocity_cms
+                    # will return ms
+                    # data["velocity_ms"] = velocity_cms / 100.0
+                except Exception as e:
+                    print("❌ Gagal baca Velocity:", e)
 
-                elif sensor["name"] == "debit":
+            if sensor["name"] == "debit":
+                try:
+                    # Instantaneous Flow (0x03EA = 1002) -> m³/s * 1000
                     flow_raw = instr.read_register(1002, 0, functioncode=3)
-                    value = flow_raw / 1000.0
-                    self.current_debit = value
-                    self.current_time = current_time
-                    return value
-
-            except Exception as e:
-                print(f"❌ Gagal baca {sensor['name']}:", e)
-                # Kembalikan nilai terakhir jika error
-                if sensor["name"] == "water_height":
-                    return self.current_water_height
-                elif sensor["name"] == "velocity":
-                    return self.current_velocity
-                elif sensor["name"] == "debit":
-                    return self.current_debit
+                    # will return m3s
+                    # data["flow_m3s"] = flow_raw / 1000.0
+                    return flow_raw / 1000.0
+                except Exception as e:
+                    print("❌ Gagal baca Flow:", e)
 
     def set_section_config(self, instr, section_parameters):
         """Konfigurasi penampang trapezoid sesuai data Anda"""
@@ -114,11 +93,20 @@ class Flowmeter:
             )
 
             # Section parameters untuk trapezoid
+            # Size1 = tinggi saluran = 2800 mm
+            # instrument.write_register(1043, 2500, functioncode=6)
             instr.write_register(1043, section_parameters["size1"], functioncode=6)
+
+            # Size2 = lebar slope = 1000 mm
+            # instrument.write_register(1044, 1000, functioncode=6)
             instr.write_register(1044, section_parameters["size2"], functioncode=6)
+
+            # Size3 = lebar dasar = 9600 mm
             instr.write_register(1045, section_parameters["size3"], functioncode=6)
 
             # Water level range (jarak sensor→dasar)
+            # Sensor ke penampang atas = 700mm, tinggi penampang 2800mm
+            # Jadi sensor→dasar = 700 + 2800 = 3500mm
             instr.write_register(
                 1058, section_parameters["height_sensor"], functioncode=6
             )

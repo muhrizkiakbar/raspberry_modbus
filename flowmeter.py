@@ -38,7 +38,7 @@ class Flowmeter:
                 instr.serial.bytesize = ser_ports[port].bytesize
                 instr.serial.parity = ser_ports[port].parity
                 instr.serial.stopbits = ser_ports[port].stopbits
-                instr.serial.timeout = 2
+                instr.serial.timeout = 3
                 instr.mode = minimalmodbus.MODE_RTU
                 self.last_key = key
                 self.instruments[key] = instr
@@ -60,8 +60,8 @@ class Flowmeter:
             last_time = self.sensor_data[name]["time"]
 
             # kalau belum 60 detik, return cached value
-            if now - last_time < 60:
-                return self.sensor_data[name]["value"]
+            # if now - last_time < 60:
+            #    return self.sensor_data[name]["value"]
 
             # sudah lewat 60 detik -> baca ulang
             try:

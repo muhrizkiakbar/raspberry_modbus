@@ -15,7 +15,7 @@ class Flowmeter:
         self.current_debit = 0
         self.current_water_height = 0
         self.current_velocity = 0
-        self.current_time = 0
+        self.current_time = 60
         self.lock = threading.Lock()
 
         for device in config["devices"]:

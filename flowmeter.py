@@ -77,7 +77,7 @@ class Flowmeter:
 
                 elif name == "velocity":
                     velocity_cms = instr.read_register(1004, 0, functioncode=3)
-                    val = velocity_cms
+                    val = velocity_cms * 0.01  # dari cm ke meter
                     if val == 0:
                         return self.sensor_data[name]["value"]
                     self.sensor_data[name] = {"value": val, "time": now}

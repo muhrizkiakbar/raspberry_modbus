@@ -149,6 +149,10 @@ class RTU:
             self.restart_requested = True
         elif payload == "update":
             self.update_requested = True
+        elif payload == "take_photo":
+            self.photo_requested = True
+        elif payload == "stream":
+            self.stream_requested = True
 
     def handle_camera_commands(self):
         """Handle command kamera yang masuk"""

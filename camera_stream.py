@@ -209,25 +209,25 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--awb",
-                            "incandescent",
+                            "auto",  # Auto WB untuk IR cut
                             "--awbgains",
-                            "1.8,0.9",
+                            "1.0,1.0",  # Netralkan WB gains
                             "--saturation",
-                            "0.0",  # SATURATION 0 = HITAM PUTIH
+                            "0.0",  # Hitam putih
                             "--brightness",
-                            "0.2",
+                            "0.1",  # Brightness sedikit dinaikkan
                             "--contrast",
-                            "1.5",  # Contrast ditingkatkan untuk hitam putih
+                            "1.3",  # Contrast untuk detail hitam putih
                             "--gain",
-                            "8",
+                            "4",  # Gain lebih rendah untuk hindari overexposure
                             "--denoise",
                             "cdn_off",
                             "--shutter",
-                            "20000000",
+                            "30000000",  # Shutter lebih panjang
                             "--ev",
-                            "0.0",
+                            "-0.3",  # Exposure compensation sedikit negatif
                             "--metering",
-                            "centre",
+                            "matrix",  # Matrix metering lebih baik untuk IR
                         ]
                     )
                 else:

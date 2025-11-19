@@ -165,13 +165,8 @@ class CameraStreamThread(threading.Thread):
                 return True
             return False
 
-    def _get_camera_mode(self):
-        """Tentukan mode kamera berdasarkan waktu"""
-        current_hour = datetime.now(TZ).hour
-        return "night" if 18 <= current_hour or current_hour < 6 else "day"
-
     def take_photo(self):
-        """Ambil foto dengan resolusi 1080p dan preset siang/malam"""
+        """Ambil foto dengan resolusi tinggi 1080p dan kirim ke API"""
         with self.lock:
             # Hentikan streaming jika sedang berjalan
             was_streaming = self.is_streaming
@@ -180,16 +175,13 @@ class CameraStreamThread(threading.Thread):
                 time.sleep(2)  # Beri waktu untuk cleanup
 
             try:
-                # Tentukan mode
-                mode = self._get_camera_mode()
+                # Buat nama file dengan timestamp
                 timestamp = datetime.now(TZ).strftime("%Y%m%d_%H%M%S")
                 photo_filename = f"/tmp/photo_{self.device_location_id}_{timestamp}.jpg"
 
-                print(
-                    f"📸 Mengambil foto mode {mode} dengan resolusi 1080p: {photo_filename}"
-                )
+                print(f"📸 Mengambil foto dengan resolusi 1080p: {photo_filename}")
 
-                # Base command untuk resolusi 1080p
+                # Ambil foto dengan resolusi 1080p dan setting kualitas tinggi
                 photo_command = [
                     "libcamera-jpeg",
                     "-o",
@@ -199,81 +191,55 @@ class CameraStreamThread(threading.Thread):
                     "--height",
                     "1080",  # Tinggi 1080 pixel
                     "--quality",
-                    "95",  # Kualitas tinggi
+                    "95",  # Kualitas lebih tinggi (95%)
+                    "--sharpness",
+                    "1.5",  # Sharpness ditingkatkan
+                    "--contrast",
+                    "1.2",  # Kontras ditingkatkan
+                    "--brightness",
+                    "0.1",  # Brightness sedikit dinaikkan
                     "--timeout",
                     "5000",  # Timeout 5 detik
-                    "--nopreview",  # Nonaktifkan preview
+                    "--nopreview",  # Nonaktifkan preview untuk performa
                 ]
 
-                # Tambahkan preset berdasarkan mode
-                if mode == "night":
-                    # PRESET MALAM - Sama seperti streaming malam tapi untuk foto
+                # Untuk mode malam, tambahkan setting tambahan
+                current_hour = datetime.now(TZ).hour
+                if 18 <= current_hour or current_hour < 6:
                     photo_command.extend(
                         [
-                            "--awb",
-                            "incandescent",
-                            "--awbgains",
-                            "1.8,0.9",
-                            "--saturation",
-                            "0.0",
-                            "--brightness",
-                            "0.2",
-                            "--contrast",
-                            "1.2",
                             "--gain",
-                            "8",
-                            "--denoise",
-                            "cdn_off",
-                            "--shutter",
-                            "20000000",  # Shutter 20ms untuk foto (bukan streaming)
-                            "--ev",
-                            "0.0",  # Exposure compensation normal
+                            "2.0",  # Gain untuk kondisi low light
+                            "--awb",
+                            "incandescent",  # White balance untuk lampu
                             "--metering",
-                            "centre",  # Centre metering
+                            "spot",  # Spot metering untuk hasil lebih baik
                         ]
                     )
                 else:
-                    # PRESET SIANG - Untuk foto
                     photo_command.extend(
                         [
                             "--awb",
-                            "auto",
-                            "--brightness",
-                            "0.0",
-                            "--contrast",
-                            "1.0",
-                            "--saturation",
-                            "1.0",
-                            "--sharpness",
-                            "1.0",
-                            "--gain",
-                            "1.0",
-                            "--ev",
-                            "0.0",
+                            "auto",  # Auto white balance untuk siang
                             "--metering",
-                            "centre",
-                            "--shutter",
-                            "1000000",  # Shutter 1ms untuk siang
+                            "centre",  # Centre weighted metering
                         ]
                     )
 
-                print(f"🔧 Command foto {mode}: {' '.join(photo_command)}")
+                print(f"🔧 Command foto: {' '.join(photo_command)}")
 
                 result = subprocess.run(
                     photo_command, capture_output=True, text=True, timeout=30
                 )
 
                 if result.returncode != 0:
-                    print(f"❌ Error mengambil foto {mode}: {result.stderr}")
-                    return self._take_photo_fallback(
-                        photo_filename, was_streaming, mode
-                    )
+                    print(f"❌ Error mengambil foto: {result.stderr}")
+                    # Fallback ke command sederhana jika gagal
+                    return self._take_photo_fallback(photo_filename, was_streaming)
 
                 if not os.path.exists(photo_filename):
                     print("❌ File foto tidak terbentuk")
-                    return self._take_photo_fallback(
-                        photo_filename, was_streaming, mode
-                    )
+                    return self._take_photo_fallback(photo_filename, was_streaming)
 
                 # Cek ukuran file untuk memastikan foto berhasil
                 file_size = os.path.getsize(photo_filename)
@@ -281,14 +247,50 @@ class CameraStreamThread(threading.Thread):
                     print(
                         f"❌ File foto terlalu kecil ({file_size} bytes), kemungkinan gagal"
                     )
-                    return self._take_photo_fallback(
-                        photo_filename, was_streaming, mode
+                    return self._take_photo_fallback(photo_filename, was_streaming)
+
+                print(f"✅ Foto berhasil diambil, ukuran: {file_size} bytes")
+
+                # Kirim foto ke API dengan parameter yang sesuai
+                print("📤 Mengirim foto ke API...")
+                with open(photo_filename, "rb") as photo_file:
+                    # Siapkan data sesuai requirement API
+                    data = {"device_location_id": self.device_location_id}
+                    files = {
+                        "photo": (
+                            f"photo_{self.device_location_id}_{timestamp}.jpg",
+                            photo_file,
+                            "image/jpeg",
+                        )
+                    }
+                    headers = {"X-API-KEY": self.api_key}
+
+                    response = requests.post(
+                        "https://telemetry-adaro.id/api/key/photo",
+                        data=data,
+                        files=files,
+                        headers=headers,
+                        verify=False,
+                        timeout=30,
                     )
 
-                print(f"✅ Foto {mode} berhasil diambil, ukuran: {file_size} bytes")
+                    if response.status_code == 200:
+                        print("✅ Foto berhasil dikirim ke API")
+                        success = True
+                    else:
+                        print(
+                            f"❌ Gagal kirim foto: {response.status_code} {response.text}"
+                        )
+                        success = False
 
-                # Kirim foto ke API
-                return self._send_photo_to_api(photo_filename, timestamp)
+                # Hapus file temporary
+                try:
+                    os.remove(photo_filename)
+                    print("🗑️ File temporary dihapus")
+                except Exception as e:
+                    print(f"⚠️ Gagal hapus file temporary: {e}")
+
+                return success
 
             except subprocess.TimeoutExpired:
                 print("❌ Timeout mengambil foto")
@@ -300,15 +302,17 @@ class CameraStreamThread(threading.Thread):
                 # Jika sebelumnya streaming, mulai kembali
                 if was_streaming:
                     time.sleep(1)
-                    mode = self._get_camera_mode()
+                    # Tentukan mode berdasarkan waktu
+                    current_hour = datetime.now(TZ).hour
+                    mode = "night" if 18 <= current_hour or current_hour < 6 else "day"
                     self.start_stream(mode)
 
-    def _take_photo_fallback(self, photo_filename, was_streaming, mode):
-        """Fallback method dengan preset siang/malam yang disederhanakan"""
+    def _take_photo_fallback(self, photo_filename, was_streaming):
+        """Fallback method jika pengambilan foto high-res gagal"""
         try:
-            print(f"🔄 Mencoba fallback method mode {mode}...")
+            print("🔄 Mencoba fallback method dengan setting dasar...")
 
-            # Base fallback command
+            # Command fallback yang lebih sederhana
             fallback_command = [
                 "libcamera-jpeg",
                 "-o",
@@ -321,35 +325,7 @@ class CameraStreamThread(threading.Thread):
                 "90",
                 "--timeout",
                 "3000",
-                "--nopreview",
             ]
-
-            # Tambahkan preset sederhana berdasarkan mode
-            if mode == "night":
-                # FALLBACK MALAM - Sama seperti streaming
-                fallback_command.extend(
-                    [
-                        "--awb",
-                        "incandescent",
-                        "--awbgains",
-                        "1.8,0.9",
-                        "--saturation",
-                        "0.0",
-                        "--brightness",
-                        "0.2",
-                        "--contrast",
-                        "1.2",
-                        "--gain",
-                        "4",  # Gain sedikit dikurangi untuk safety
-                        "--denoise",
-                        "cdn_off",
-                    ]
-                )
-            else:
-                # FALLBACK SIANG
-                fallback_command.extend(
-                    ["--awb", "auto", "--brightness", "0.0", "--contrast", "1.0"]
-                )
 
             result = subprocess.run(
                 fallback_command, capture_output=True, text=True, timeout=20
@@ -357,11 +333,34 @@ class CameraStreamThread(threading.Thread):
 
             if result.returncode == 0 and os.path.exists(photo_filename):
                 file_size = os.path.getsize(photo_filename)
-                print(f"✅ Foto fallback {mode} berhasil, ukuran: {file_size} bytes")
+                print(f"✅ Foto fallback berhasil, ukuran: {file_size} bytes")
 
                 # Kirim ke API
-                timestamp = datetime.now(TZ).strftime("%Y%m%d_%H%M%S")
-                success = self._send_photo_to_api(photo_filename, timestamp)
+                with open(photo_filename, "rb") as photo_file:
+                    data = {"device_location_id": self.device_location_id}
+                    files = {
+                        "photo": (
+                            os.path.basename(photo_filename),
+                            photo_file,
+                            "image/jpeg",
+                        )
+                    }
+                    headers = {"X-API-KEY": self.api_key}
+
+                    response = requests.post(
+                        "https://telemetry-adaro.id/api/key/device_photo/store",
+                        data=data,
+                        files=files,
+                        headers=headers,
+                        verify=False,
+                        timeout=30,
+                    )
+
+                    success = response.status_code == 200
+                    if success:
+                        print("✅ Foto fallback berhasil dikirim ke API")
+                    else:
+                        print(f"❌ Gagal kirim foto fallback: {response.status_code}")
 
                 # Cleanup
                 try:
@@ -377,50 +376,6 @@ class CameraStreamThread(threading.Thread):
         except Exception as e:
             print(f"❌ Error di fallback method: {e}")
             return False
-
-    def _send_photo_to_api(self, photo_filename, timestamp):
-        """Helper method untuk mengirim foto ke API"""
-        try:
-            print("📤 Mengirim foto ke API...")
-            with open(photo_filename, "rb") as photo_file:
-                data = {"device_location_id": self.device_location_id}
-                files = {
-                    "photo": (
-                        f"photo_{self.device_location_id}_{timestamp}.jpg",
-                        photo_file,
-                        "image/jpeg",
-                    )
-                }
-                headers = {"X-API-KEY": self.api_key}
-
-                response = requests.post(
-                    "https://telemetry-adaro.id/api/key/device_photo/store",
-                    data=data,
-                    files=files,
-                    headers=headers,
-                    verify=False,
-                    timeout=30,
-                )
-
-                if response.status_code == 200:
-                    print("✅ Foto berhasil dikirim ke API")
-                    return True
-                else:
-                    print(
-                        f"❌ Gagal kirim foto: {response.status_code} {response.text}"
-                    )
-                    return False
-
-        except Exception as e:
-            print(f"❌ Error mengirim foto ke API: {e}")
-            return False
-        finally:
-            # Hapus file temporary
-            try:
-                os.remove(photo_filename)
-                print("🗑️ File temporary dihapus")
-            except Exception as e:
-                print(f"⚠️ Gagal hapus file temporary: {e}")
 
     def check_timeout(self):
         """Cek apakah streaming sudah melebihi timeout"""

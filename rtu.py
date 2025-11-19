@@ -43,6 +43,9 @@ class RTU:
         self.config = self.load_config(config_file)
         self.photo_requested = False
         self.stream_requested = False
+        self.report_requested = False
+        self.restart_requested = False
+        self.update_requested = False
 
         self.camera_thread = CameraStreamThread(DEVICE_LOCATION_ID, API_KEY)
 
@@ -58,10 +61,6 @@ class RTU:
         self.mqtt_client = self.init_mqtt()
         self.modbusampere = Modbusampere(self.ser_ports, self.config)
         self.flowmeter = Flowmeter(self.ser_ports, self.config)
-
-        self.report_requested = False
-        self.restart_requested = False
-        self.update_requested = False
 
         # === Rain Counter Thread ===
         rain_sensor = None

@@ -214,8 +214,6 @@ class CameraStreamThread(threading.Thread):
                             "1.2,0.8",  # Red lebih tinggi, Blue lebih rendah
                             "--saturation",
                             "0.0",  # Hitam putih
-                            "--brightness",
-                            "0.1",
                             "--contrast",
                             "1.4",
                             "--gain",

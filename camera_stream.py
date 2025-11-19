@@ -208,15 +208,26 @@ class CameraStreamThread(threading.Thread):
                 if 18 <= current_hour or current_hour < 6:
                     photo_command.extend(
                         [
-                            "--gain",
-                            "8.0",  # Gain untuk kondisi low light
                             "--awb",
-                            "incandescent",  # White balance untuk lampu
-                            "--metering",
-                            "spot",  # Spot metering untuk hasil lebih baik
-                            " --denoise cdn_off",
+                            "incandescent",
                             "--awbgains",
                             "1.8,0.9",
+                            "--saturation",
+                            "0.0",  # SATURATION 0 = HITAM PUTIH
+                            "--brightness",
+                            "0.2",
+                            "--contrast",
+                            "1.5",  # Contrast ditingkatkan untuk hitam putih
+                            "--gain",
+                            "8",
+                            "--denoise",
+                            "cdn_off",
+                            "--shutter",
+                            "20000000",
+                            "--ev",
+                            "0.0",
+                            "--metering",
+                            "centre",
                         ]
                     )
                 else:

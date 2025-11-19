@@ -261,6 +261,7 @@ class RTU:
                     self.update_requested = False
 
             if CAMERA_MODE == "CAMERA_ONLY":
+                print("🎥 Mode: CAMERA_ONLY - sensor diabaikan")
                 time.sleep(5)
                 continue
 

@@ -348,7 +348,7 @@ class CameraStreamThread(threading.Thread):
                     headers = {"X-API-KEY": self.api_key}
 
                     response = requests.post(
-                        "https://telemetry-adaro.id/api/key/photo",
+                        "https://telemetry-adaro.id/api/key/device_photo/store",
                         data=data,
                         files=files,
                         headers=headers,

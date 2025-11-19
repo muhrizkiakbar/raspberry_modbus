@@ -194,10 +194,6 @@ class CameraStreamThread(threading.Thread):
                     "95",  # Kualitas lebih tinggi (95%)
                     "--sharpness",
                     "1.5",  # Sharpness ditingkatkan
-                    "--contrast",
-                    "1.2",  # Kontras ditingkatkan
-                    "--brightness",
-                    "0.1",  # Brightness sedikit dinaikkan
                     "--timeout",
                     "5000",  # Timeout 5 detik
                     "--nopreview",  # Nonaktifkan preview untuk performa
@@ -209,15 +205,11 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--awb",
-                            "tungsten",  # atau "incandescent"
+                            "incandescent",  # atau "incandescent"
                             "--awbgains",
-                            "1.2,0.8",  # Red lebih tinggi, Blue lebih rendah
+                            "1.8,0.9",  # Red lebih tinggi, Blue lebih rendah
                             "--saturation",
                             "0.0",  # Hitam putih
-                            "--contrast",
-                            "1.4",
-                            "--gain",
-                            "3",
                             "--denoise",
                             "cdn_off",
                             "--shutter",

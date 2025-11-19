@@ -209,11 +209,14 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--gain",
-                            "2.0",  # Gain untuk kondisi low light
+                            "8.0",  # Gain untuk kondisi low light
                             "--awb",
                             "incandescent",  # White balance untuk lampu
                             "--metering",
                             "spot",  # Spot metering untuk hasil lebih baik
+                            " --denoise cdn_off",
+                            "--awbgains",
+                            "1.8,0.9",
                         ]
                     )
                 else:

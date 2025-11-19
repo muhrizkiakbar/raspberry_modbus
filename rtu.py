@@ -12,6 +12,7 @@ from flowmeter import Flowmeter
 from raincounterthread import RainCounterThread
 import tempfile
 import urllib3
+from camera_stream import CameraStreamThread  # Import class camera dari file terpisah
 
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -29,8 +30,10 @@ DEVICE_LOCATION_ID = int(os.getenv("DEVICE_LOCATION_ID", ""))
 API_KEY = str(os.getenv("API_KEY", ""))
 MQTT_USERNAME = str(os.getenv("MQTT_USERNAME", ""))
 MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
-RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", 0.2))
+RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", 0.5))
 SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
+
+CAMERA_MODE = str(os.getenv("CAMERA_MODE", "OFF"))
 
 VERSION = "1.0.17"
 
@@ -38,6 +41,19 @@ VERSION = "1.0.17"
 class RTU:
     def __init__(self, config_file):
         self.config = self.load_config(config_file)
+        self.photo_requested = False
+        self.stream_requested = False
+
+        self.camera_thread = CameraStreamThread(DEVICE_LOCATION_ID, API_KEY)
+
+        if CAMERA_MODE == "CAMERA_ONLY":
+            print("🎥 Mode: CAMERA_ONLY - sensor diabaikan")
+            self.camera_thread.start()
+            return
+        elif CAMERA_MODE == "CAMERA_WITH_SENSORS":
+            print("🎥📊 Mode: CAMERA_WITH_SENSORS - sensor dan kamera aktif")
+            self.camera_thread.start()
+
         self.ser_ports = self.init_serial_ports()
         self.mqtt_client = self.init_mqtt()
         self.modbusampere = Modbusampere(self.ser_ports, self.config)
@@ -135,6 +151,33 @@ class RTU:
         elif payload == "update":
             self.update_requested = True
 
+    def handle_camera_commands(self):
+        """Handle command kamera yang masuk"""
+        if self.stream_requested:
+            # Pastikan tidak ada multiple stream
+            if self.camera_thread.is_streaming:
+                print("⚠️ Streaming sudah aktif, tidak membuat multiple stream")
+            else:
+                # Tentukan mode berdasarkan waktu
+                current_hour = datetime.now(TZ).hour
+                mode = "night" if 18 <= current_hour or current_hour < 6 else "day"
+
+                if self.camera_thread.start_stream(mode):
+                    print(f"🎥 Streaming mode {mode} dimulai")
+                else:
+                    print("❌ Gagal memulai streaming")
+
+            self.stream_requested = False
+
+        if self.photo_requested:
+            print("📸 Received take photo command")
+            if self.camera_thread.take_photo():
+                print("✅ Foto berhasil diambil dan dikirim")
+            else:
+                print("❌ Gagal mengambil foto")
+
+            self.photo_requested = False
+
     def send_telemetry(self, payload_api):
         try:
             headers = {
@@ -158,6 +201,8 @@ class RTU:
 
     def monitor_all_devices(self):
         while not self.restart_requested:
+            self.handle_camera_commands()
+
             if self.update_requested:
                 try:
                     print("Menjalankan git pull origin master...")
@@ -211,6 +256,10 @@ class RTU:
                     print("Error saat update:", e)
                 finally:
                     self.update_requested = False
+
+            if CAMERA_MODE == "CAMERA_ONLY":
+                time.sleep(5)
+                continue
 
             payload_mqtt = {
                 "timestamp": time.time(),

@@ -210,8 +210,6 @@ class CameraStreamThread(threading.Thread):
                             "1.8,0.9",  # Red lebih tinggi, Blue lebih rendah
                             "--saturation",
                             "0.0",  # Hitam putih
-                            "--shutter",
-                            "40000000",  # Shutter lebih panjang lagi
                             "--ev",
                             "-0.5",
                             "--metering",

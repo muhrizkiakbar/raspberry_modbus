@@ -194,10 +194,6 @@ class CameraStreamThread(threading.Thread):
                     "95",  # Kualitas lebih tinggi (95%)
                     "--sharpness",
                     "1.5",  # Sharpness ditingkatkan
-                    "--contrast",
-                    "1.2",  # Kontras ditingkatkan
-                    "--brightness",
-                    "0.1",  # Brightness sedikit dinaikkan
                     "--timeout",
                     "5000",  # Timeout 5 detik
                     "--nopreview",  # Nonaktifkan preview untuk performa

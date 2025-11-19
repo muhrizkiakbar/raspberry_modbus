@@ -207,7 +207,7 @@ class CameraStreamThread(threading.Thread):
 
                 # Tambahkan preset berdasarkan mode
                 if mode == "night":
-                    # Preset malam (sama seperti streaming malam)
+                    # PRESET MALAM - Sama seperti streaming malam tapi untuk foto
                     photo_command.extend(
                         [
                             "--awb",
@@ -225,13 +225,15 @@ class CameraStreamThread(threading.Thread):
                             "--denoise",
                             "cdn_off",
                             "--shutter",
-                            "10000000",  # Shutter 10ms untuk low light
+                            "20000000",  # Shutter 20ms untuk foto (bukan streaming)
+                            "--ev",
+                            "0.0",  # Exposure compensation normal
                             "--metering",
-                            "spot",
+                            "centre",  # Centre metering
                         ]
                     )
                 else:
-                    # Preset siang (sama seperti streaming siang)
+                    # PRESET SIANG - Untuk foto
                     photo_command.extend(
                         [
                             "--awb",
@@ -246,8 +248,12 @@ class CameraStreamThread(threading.Thread):
                             "1.0",
                             "--gain",
                             "1.0",
+                            "--ev",
+                            "0.0",
                             "--metering",
                             "centre",
+                            "--shutter",
+                            "1000000",  # Shutter 1ms untuk siang
                         ]
                     )
 
@@ -320,19 +326,27 @@ class CameraStreamThread(threading.Thread):
 
             # Tambahkan preset sederhana berdasarkan mode
             if mode == "night":
+                # FALLBACK MALAM - Sama seperti streaming
                 fallback_command.extend(
                     [
                         "--awb",
                         "incandescent",
+                        "--awbgains",
+                        "1.8,0.9",
+                        "--saturation",
+                        "0.0",
                         "--brightness",
                         "0.2",
                         "--contrast",
                         "1.2",
                         "--gain",
-                        "4",
+                        "4",  # Gain sedikit dikurangi untuk safety
+                        "--denoise",
+                        "cdn_off",
                     ]
                 )
             else:
+                # FALLBACK SIANG
                 fallback_command.extend(
                     ["--awb", "auto", "--brightness", "0.0", "--contrast", "1.0"]
                 )

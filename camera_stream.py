@@ -194,6 +194,10 @@ class CameraStreamThread(threading.Thread):
                     "95",  # Kualitas lebih tinggi (95%)
                     "--sharpness",
                     "1.5",  # Sharpness ditingkatkan
+                    "--contrast",
+                    "1.2",  # Kontras ditingkatkan
+                    "--brightness",
+                    "0.1",  # Brightness sedikit dinaikkan
                     "--timeout",
                     "5000",  # Timeout 5 detik
                     "--nopreview",  # Nonaktifkan preview untuk performa
@@ -205,25 +209,25 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--awb",
-                            "auto",  # Auto WB untuk IR cut
+                            "tungsten",  # atau "incandescent"
                             "--awbgains",
-                            "1.0,1.0",  # Netralkan WB gains
+                            "1.2,0.8",  # Red lebih tinggi, Blue lebih rendah
                             "--saturation",
                             "0.0",  # Hitam putih
                             "--brightness",
-                            "0.1",  # Brightness sedikit dinaikkan
+                            "0.1",
                             "--contrast",
-                            "1.3",  # Contrast untuk detail hitam putih
+                            "1.4",
                             "--gain",
-                            "4",  # Gain lebih rendah untuk hindari overexposure
+                            "3",
                             "--denoise",
                             "cdn_off",
                             "--shutter",
-                            "30000000",  # Shutter lebih panjang
+                            "40000000",  # Shutter lebih panjang lagi
                             "--ev",
-                            "-0.3",  # Exposure compensation sedikit negatif
+                            "-0.5",
                             "--metering",
-                            "matrix",  # Matrix metering lebih baik untuk IR
+                            "matrix",
                         ]
                     )
                 else:

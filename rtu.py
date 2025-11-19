@@ -150,6 +150,7 @@ class RTU:
         elif payload == "update":
             self.update_requested = True
         elif payload == "take_photo":
+            print("MINTA FOTO")
             self.photo_requested = True
         elif payload == "stream":
             self.stream_requested = True

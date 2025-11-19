@@ -46,6 +46,7 @@ class RTU:
         self.report_requested = False
         self.restart_requested = False
         self.update_requested = False
+        self.mqtt_client = self.init_mqtt()
 
         self.camera_thread = CameraStreamThread(DEVICE_LOCATION_ID, API_KEY)
 
@@ -58,7 +59,6 @@ class RTU:
             self.camera_thread.start()
 
         self.ser_ports = self.init_serial_ports()
-        self.mqtt_client = self.init_mqtt()
         self.modbusampere = Modbusampere(self.ser_ports, self.config)
         self.flowmeter = Flowmeter(self.ser_ports, self.config)
 

@@ -42,8 +42,6 @@ VERSION = "1.0.17"
 class RTU:
     def __init__(self, config_file):
         self.config = self.load_config(config_file)
-        self.photo_requested = False
-        self.stream_requested = False
         self.report_requested = False
         self.restart_requested = False
         self.update_requested = False
@@ -51,12 +49,13 @@ class RTU:
         # Inisialisasi MQTT client terlebih dahulu
         self.mqtt_client = self.init_mqtt()
 
-        # Inisialisasi camera thread dengan MQTT client
+        # Inisialisasi camera thread dengan MQTT client terpisah
         self.camera_thread = CameraStreamThread(
             device_location_id=DEVICE_LOCATION_ID,
             api_key=API_KEY,
-            mqtt_client=self.mqtt_client,
             mqtt_config=self.config["mqtt"],
+            mqtt_username=MQTT_USERNAME,
+            mqtt_password=MQTT_PASSWORD,
         )
 
         if CAMERA_MODE == "CAMERA_ONLY":
@@ -193,24 +192,9 @@ class RTU:
         except Exception as e:
             print(f"⚠️ Error kirim API: {e}")
 
-    def handle_camera_commands(self):
-        """Handle command kamera legacy (jika masih menggunakan topic lama)"""
-        # Fungsi ini untuk backward compatibility
-        # Sebaiknya gunakan topic camera terpisah
-        if self.stream_requested:
-            print("⚠️ Stream command via legacy topic, please use camera topic")
-            self.stream_requested = False
-
-        if self.photo_requested:
-            print("⚠️ Photo command via legacy topic, please use camera topic")
-            self.photo_requested = False
-
     def monitor_all_devices(self):
         try:
             while not self.restart_requested:
-                # Handle legacy camera commands (jika ada)
-                self.handle_camera_commands()
-
                 if self.update_requested:
                     try:
                         print("Menjalankan git pull origin master...")

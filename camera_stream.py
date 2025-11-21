@@ -13,12 +13,16 @@ TZ = ZoneInfo("Asia/Makassar")
 
 
 class CameraStreamThread(threading.Thread):
-    def __init__(self, device_location_id, api_key, mqtt_client, mqtt_config):
+    def __init__(
+        self, device_location_id, api_key, mqtt_config, mqtt_username, mqtt_password
+    ):
         super().__init__()
         self.device_location_id = device_location_id
         self.api_key = api_key
-        self.mqtt_client = mqtt_client
         self.mqtt_config = mqtt_config
+        self.mqtt_username = mqtt_username
+        self.mqtt_password = mqtt_password
+
         self.stream_process = None
         self.is_streaming = False
         self.stream_start_time = None
@@ -31,21 +35,49 @@ class CameraStreamThread(threading.Thread):
         self.command_topic = f"{mqtt_config['base_topic']}/camera/command"
         self.status_topic = f"{mqtt_config['base_topic']}/camera"
 
-        # Setup MQTT message callback
-        self.mqtt_client.message_callback_add(
-            self.command_topic, self._on_camera_message
-        )
-        self._setup_mqtt_subscriptions()
+        # Buat MQTT client terpisah untuk camera
+        self.mqtt_client = self._init_mqtt_client()
 
-    def _setup_mqtt_subscriptions(self):
-        """Setup MQTT subscriptions untuk camera"""
+        print(f"🎥 Camera thread initialized with topics:")
+        print(f"   Command: {self.command_topic}")
+        print(f"   Status: {self.status_topic}")
+
+    def _init_mqtt_client(self):
+        """Inisialisasi MQTT client terpisah untuk camera"""
         try:
-            self.mqtt_client.subscribe(self.command_topic, qos=1)
-            print(f"📡 Camera subscribed to: {self.command_topic}")
-        except Exception as e:
-            print(f"❌ Gagal subscribe MQTT camera: {e}")
+            client_id = f"{self.mqtt_config['client_id']}_camera"
+            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
+            client.username_pw_set(self.mqtt_username, self.mqtt_password)
+            client.on_connect = self._on_mqtt_connect
+            client.on_message = self._on_mqtt_message
 
-    def _on_camera_message(self, client, userdata, msg):
+            # Connect ke broker
+            client.connect(self.mqtt_config["broker"], self.mqtt_config["port"])
+            client.loop_start()
+
+            print(
+                f"✅ Camera MQTT client connected to {self.mqtt_config['broker']}:{self.mqtt_config['port']}"
+            )
+            return client
+
+        except Exception as e:
+            print(f"❌ Gagal inisialisasi MQTT client camera: {e}")
+            return None
+
+    def _on_mqtt_connect(self, client, userdata, flags, reason_code, properties):
+        """Callback ketika MQTT client camera terhubung"""
+        if reason_code == 0:
+            print("✅ Camera MQTT client connected successfully")
+            # Subscribe hanya ke topic camera command
+            client.subscribe(self.command_topic, qos=1)
+            print(f"📡 Camera subscribed exclusively to: {self.command_topic}")
+
+            # Publish status online
+            self._publish_camera_status("online")
+        else:
+            print(f"❌ Camera MQTT connection failed: {reason_code}")
+
+    def _on_mqtt_message(self, client, userdata, msg):
         """Handle incoming MQTT messages khusus untuk camera"""
         try:
             payload = msg.payload.decode().strip().lower()
@@ -103,8 +135,9 @@ class CameraStreamThread(threading.Thread):
                 "streaming_since": self.stream_start_time,
             }
 
-            self.mqtt_client.publish(self.status_topic, json.dumps(payload), qos=1)
-            print(f"📤 Camera status published: {status}")
+            if self.mqtt_client:
+                self.mqtt_client.publish(self.status_topic, json.dumps(payload), qos=1)
+                print(f"📤 Camera status published: {status}")
 
         except Exception as e:
             print(f"❌ Gagal publish camera status: {e}")
@@ -122,7 +155,8 @@ class CameraStreamThread(threading.Thread):
                 else 0,
             }
 
-            self.mqtt_client.publish(self.status_topic, json.dumps(payload), qos=1)
+            if self.mqtt_client:
+                self.mqtt_client.publish(self.status_topic, json.dumps(payload), qos=1)
 
         except Exception as e:
             print(f"❌ Gagal publish camera heartbeat: {e}")
@@ -320,9 +354,9 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--awb",
-                            "incandescent",  # atau "incandescent"
+                            "incandescent",
                             "--awbgains",
-                            "1.8,0.9",  # Red lebih tinggi, Blue lebih rendah
+                            "1.8,0.9",
                             "--saturation",
                             "0.0",  # Hitam putih
                             "--ev",
@@ -523,9 +557,15 @@ class CameraStreamThread(threading.Thread):
         """Hentikan thread"""
         self._stop_event.set()
         self.stop_stream()
-        # Hapus message callback
-        try:
-            self.mqtt_client.message_callback_remove(self.command_topic)
-        except:
-            pass
+
+        # Hentikan MQTT client
+        if self.mqtt_client:
+            try:
+                self.mqtt_client.loop_stop()
+                self.mqtt_client.disconnect()
+                print("✅ Camera MQTT client stopped")
+            except Exception as e:
+                print(f"⚠️ Error stopping camera MQTT client: {e}")
+
         self._publish_camera_status("offline")
+        print("✅ Camera thread stopped")

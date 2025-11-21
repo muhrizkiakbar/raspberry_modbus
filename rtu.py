@@ -151,9 +151,7 @@ class RTU:
             )
 
             # Subscribe ke topic camera (akan dihandle oleh camera thread)
-            camera_command_topic = (
-                f"{self.config['mqtt']['command_topic']}/camera/command"
-            )
+            camera_command_topic = f"{self.config['mqtt']['base_topic']}/camera/command"
             print(f"📡 Main RTU aware of camera topic: {camera_command_topic}")
         else:
             print(f"❌ Failed to connect MQTT: {reason_code}")

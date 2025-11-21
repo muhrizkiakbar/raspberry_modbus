@@ -27,12 +27,14 @@ class CameraStreamThread(threading.Thread):
         self.daemon = True
         self._stop_event = threading.Event()
 
-        # Setup MQTT topics
+        # Setup MQTT topics - menggunakan base_topic
         self.command_topic = f"{mqtt_config['base_topic']}/camera/command"
         self.status_topic = f"{mqtt_config['base_topic']}/camera"
 
-        # Setup MQTT callbacks
-        self.mqtt_client.on_message = self._on_mqtt_message
+        # Setup MQTT message callback
+        self.mqtt_client.message_callback_add(
+            self.command_topic, self._on_camera_message
+        )
         self._setup_mqtt_subscriptions()
 
     def _setup_mqtt_subscriptions(self):
@@ -43,24 +45,23 @@ class CameraStreamThread(threading.Thread):
         except Exception as e:
             print(f"❌ Gagal subscribe MQTT camera: {e}")
 
-    def _on_mqtt_message(self, client, userdata, msg):
-        """Handle incoming MQTT messages untuk camera"""
+    def _on_camera_message(self, client, userdata, msg):
+        """Handle incoming MQTT messages khusus untuk camera"""
         try:
             payload = msg.payload.decode().strip().lower()
             print(f"📨 Camera command diterima: '{payload}' dari topic: {msg.topic}")
 
-            if msg.topic == self.command_topic:
-                if payload == "stream":
-                    self._handle_stream_command()
-                elif payload == "take":
-                    self._handle_take_photo_command()
-                elif payload == "stop":
-                    self._handle_stop_command()
-                else:
-                    print(f"⚠️ Command camera tidak dikenali: {payload}")
+            if payload == "stream":
+                self._handle_stream_command()
+            elif payload == "take":
+                self._handle_take_photo_command()
+            elif payload == "stop":
+                self._handle_stop_command()
+            else:
+                print(f"⚠️ Command camera tidak dikenali: {payload}")
 
         except Exception as e:
-            print(f"❌ Error handling MQTT message: {e}")
+            print(f"❌ Error handling MQTT camera message: {e}")
 
     def _handle_stream_command(self):
         """Handle command stream dari MQTT"""
@@ -522,4 +523,9 @@ class CameraStreamThread(threading.Thread):
         """Hentikan thread"""
         self._stop_event.set()
         self.stop_stream()
+        # Hapus message callback
+        try:
+            self.mqtt_client.message_callback_remove(self.command_topic)
+        except:
+            pass
         self._publish_camera_status("offline")

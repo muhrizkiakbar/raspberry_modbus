@@ -375,10 +375,6 @@ class CameraStreamThread(threading.Thread):
                             "1.4,1.4",
                             "--ev",
                             "0.0",
-                            "--metering",
-                            "centre",
-                            "--shutter",
-                            "1000000",
                         ]
                     )
 

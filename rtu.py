@@ -1,3 +1,4 @@
+# rtu_main.py
 import serial
 import json
 import time
@@ -10,9 +11,9 @@ from dotenv import load_dotenv
 from modbusampere import Modbusampere
 from flowmeter import Flowmeter
 from raincounterthread import RainCounterThread
+from camera_stream import CameraStreamThread
 import tempfile
 import urllib3
-from camera_stream import CameraStreamThread  # Import class camera dari file terpisah
 
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -43,12 +44,17 @@ class RTU:
         self.config = self.load_config(config_file)
         self.photo_requested = False
         self.stream_requested = False
-        self.report_requested = False
-        self.restart_requested = False
-        self.update_requested = False
+
+        # Inisialisasi MQTT client terlebih dahulu
         self.mqtt_client = self.init_mqtt()
 
-        self.camera_thread = CameraStreamThread(DEVICE_LOCATION_ID, API_KEY)
+        # Inisialisasi camera thread dengan MQTT client
+        self.camera_thread = CameraStreamThread(
+            device_location_id=DEVICE_LOCATION_ID,
+            api_key=API_KEY,
+            mqtt_client=self.mqtt_client,
+            mqtt_config=self.config["mqtt"],
+        )
 
         if CAMERA_MODE == "CAMERA_ONLY":
             print("🎥 Mode: CAMERA_ONLY - sensor diabaikan")
@@ -58,9 +64,14 @@ class RTU:
             print("🎥📊 Mode: CAMERA_WITH_SENSORS - sensor dan kamera aktif")
             self.camera_thread.start()
 
+        # Inisialisasi komponen sensor hanya jika bukan CAMERA_ONLY
         self.ser_ports = self.init_serial_ports()
         self.modbusampere = Modbusampere(self.ser_ports, self.config)
         self.flowmeter = Flowmeter(self.ser_ports, self.config)
+
+        self.report_requested = False
+        self.restart_requested = False
+        self.update_requested = False
 
         # === Rain Counter Thread ===
         rain_sensor = None
@@ -134,53 +145,36 @@ class RTU:
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
-            # print("Connected to MQTT Broker")
+            # Subscribe ke topic command sensor
             client.subscribe(self.config["mqtt"]["command_topic"], qos=1)
+            print(
+                f"✅ Connected MQTT & Subscribed to {self.config['mqtt']['command_topic']}"
+            )
+
+            # Subscribe ke topic camera (akan dihandle oleh camera thread)
+            camera_command_topic = (
+                f"{self.config['mqtt']['command_topic']}/camera/command"
+            )
+            print(f"📡 Main RTU aware of camera topic: {camera_command_topic}")
         else:
-            # print(f"Failed to connect MQTT: {reason_code}")
+            print(f"❌ Failed to connect MQTT: {reason_code}")
             return
 
     def on_message(self, client, userdata, msg):
         payload = msg.payload.decode().strip().lower()
-        print(f"Command MQTT diterima: {payload}")
-        if payload == "report":
-            self.report_requested = True
-        elif payload == "restart":
-            self.restart_requested = True
-        elif payload == "update":
-            self.update_requested = True
-        elif payload == "take_photo":
-            print("MINTA FOTO")
-            self.photo_requested = True
-        elif payload == "stream":
-            self.stream_requested = True
+        print(f"📨 Command MQTT diterima: '{payload}' dari topic: {msg.topic}")
 
-    def handle_camera_commands(self):
-        """Handle command kamera yang masuk"""
-        if self.stream_requested:
-            # Pastikan tidak ada multiple stream
-            if self.camera_thread.is_streaming:
-                print("⚠️ Streaming sudah aktif, tidak membuat multiple stream")
-            else:
-                # Tentukan mode berdasarkan waktu
-                current_hour = datetime.now(TZ).hour
-                mode = "night" if 18 <= current_hour or current_hour < 6 else "day"
+        # Handle command dari topic sensor utama
+        if msg.topic == self.config["mqtt"]["command_topic"]:
+            if payload == "report":
+                self.report_requested = True
+            elif payload == "restart":
+                self.restart_requested = True
+            elif payload == "update":
+                self.update_requested = True
 
-                if self.camera_thread.start_stream(mode):
-                    print(f"🎥 Streaming mode {mode} dimulai")
-                else:
-                    print("❌ Gagal memulai streaming")
-
-            self.stream_requested = False
-
-        if self.photo_requested:
-            print("📸 Received take photo command")
-            if self.camera_thread.take_photo():
-                print("✅ Foto berhasil diambil dan dikirim")
-            else:
-                print("❌ Gagal mengambil foto")
-
-            self.photo_requested = False
+        # Command camera dihandle oleh CameraStreamThread melalui topic terpisah
+        # Tidak perlu handle di sini
 
     def send_telemetry(self, payload_api):
         try:
@@ -190,7 +184,6 @@ class RTU:
                 "Accept": "application/json",
             }
 
-            # Gunakan verify untuk memverifikasi SSL dengan root CA ini
             response = requests.post(
                 TELEMETRY_URL, json=payload_api, headers=headers, verify=False
             )
@@ -203,188 +196,199 @@ class RTU:
         except Exception as e:
             print(f"⚠️ Error kirim API: {e}")
 
+    def handle_camera_commands(self):
+        """Handle command kamera legacy (jika masih menggunakan topic lama)"""
+        # Fungsi ini untuk backward compatibility
+        # Sebaiknya gunakan topic camera terpisah
+        if self.stream_requested:
+            print("⚠️ Stream command via legacy topic, please use camera topic")
+            self.stream_requested = False
+
+        if self.photo_requested:
+            print("⚠️ Photo command via legacy topic, please use camera topic")
+            self.photo_requested = False
+
     def monitor_all_devices(self):
-        while not self.restart_requested:
-            self.handle_camera_commands()
+        try:
+            while not self.restart_requested:
+                # Handle legacy camera commands (jika ada)
+                self.handle_camera_commands()
 
-            if self.update_requested:
-                try:
-                    print("Menjalankan git pull origin master...")
-                    result = subprocess.run(
-                        ["git", "pull", "origin", "master"],
-                        capture_output=True,
-                        text=True,
-                    )
-                    print(result.stdout)
-                    if result.returncode == 0:
-                        print("Git pull berhasil")
-
-                        # Install package apt
-                        # print("Menjalankan sudo apt install hello -y...")
-                        # apt_result = subprocess.run(
-                        #    ["sudo", "apt", "install", "hello", "-y"],
-                        #    capture_output=True,
-                        #    text=True,
-                        # )
-                        # if apt_result.returncode == 0:
-                        #    print("Package hello berhasil diinstall")
-                        # else:
-                        #    print("Gagal install package hello:", apt_result.stderr)
-
-                        # Install package pip
-                        # pip_package = "somepackage"  # ganti sesuai kebutuhan
-                        # print(
-                        #    f"Menjalankan pip install {pip_package} --break-system-packages..."
-                        # )
-                        # pip_result = subprocess.run(
-                        #    ["pip", "install", pip_package, "--break-system-packages"],
-                        #    capture_output=True,
-                        #    text=True,
-                        # )
-                        # if pip_result.returncode == 0:
-                        #    print(f"Package {pip_package} berhasil diinstall via pip")
-                        # else:
-                        #    print(
-                        #        f"Gagal install package {pip_package} via pip:",
-                        #        pip_result.stderr,
-                        #    )
-
-                        # Restart service modbus
-                        print("Restart service modbus...")
-                        subprocess.run(["sudo", "reboot"], check=True)
-                        print("Service modbus berhasil direstart")
-                        break  # keluar loop agar service restart sempurna
-                    else:
-                        print("Git pull gagal:", result.stderr)
-                except Exception as e:
-                    print("Error saat update:", e)
-                finally:
-                    self.update_requested = False
-
-            if CAMERA_MODE == "CAMERA_ONLY":
-                print("🎥 Mode: CAMERA_ONLY - sensor diabaikan")
-                time.sleep(5)
-                continue
-
-            payload_mqtt = {
-                "timestamp": time.time(),
-                "timestamp_humanize": datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S"),
-                "device_location_id": DEVICE_LOCATION_ID,
-                "sensors": [],
-                "version": VERSION,
-            }
-
-            payload_api = {
-                "device_location_id": DEVICE_LOCATION_ID,
-                "ph": 0.0,
-                "tds": 0.0,
-                "tss": 0.0,
-                "debit": 0.0,
-                "rainfall": 0.0,
-                "rainfall_daily": 0.0,
-                "water_height": 0.0,
-                "temperature": 0.0,
-                "humidity": 0.0,
-                "wind_direction": 0.0,
-                "wind_speed": 0.0,
-                "solar_radiation": 0.0,
-                "evaporation": 0.0,
-                "dissolve_oxygen": 0.0,
-                "velocity": 0.0,
-                "water_volume": 0.0,
-            }
-
-            value_details = {}
-
-            for device in self.config["devices"]:
-                port = device["port"]
-                for sensor in device["sensors"]:
-                    value = None
-                    if device["type"] == "modbus":
-                        if sensor["type"] == "4-20mA":
-                            value = self.modbusampere.read_analog(sensor, port)
-                        elif sensor["type"] == "digital_in":
-                            if self.rain_thread and sensor["name"] == "rainfall":
-                                value_details = {
-                                    "realtime": self.rain_thread.rainfall_realtime,
-                                    "daily": self.rain_thread.rainfall_daily,
-                                    "hourly": self.rain_thread.rainfall_hourly,
-                                    "total": self.rain_thread.rainfall_total,
-                                    "unit": "mm",
-                                }
-                                value = self.rain_thread.rainfall_hourly
-                            else:
-                                value = self.modbusampere.read_digital_inputs(
-                                    sensor, port
-                                )
-                    elif (
-                        device["type"] == "direct_rs485" and device["name"] == "rs_rad"
-                    ):
-                        value = self.flowmeter.read_sensor_data(sensor, port)
-
-                    sensor_data = {}
-
-                    if self.rain_thread and sensor["name"] == "rainfall":
-                        print("kena di rainfall")
-                        sensor_data = {
-                            sensor["name"]: {
-                                "sensor_type": sensor["type"],
-                                "unit": sensor.get("conversion", {}).get("unit", ""),
-                                "value": round(value_details["realtime"], 1)
-                                if value_details["realtime"] is not None
-                                else "ERROR",
-                                "status": "OK" if value is not None else "error",
-                                "values": value_details,
-                            }
-                        }
-
-                    else:
-                        sensor_data = {
-                            sensor["name"]: {
-                                "sensor_type": sensor["type"],
-                                "unit": sensor.get("conversion", {}).get("unit", ""),
-                                "value": round(value, 1)
-                                if value is not None
-                                else "ERROR",
-                                "status": "OK" if value is not None else "error",
-                                "value_details": value_details,
-                            }
-                        }
-
-                    payload_mqtt["sensors"].append(sensor_data)
-
-                    if value is not None and sensor["name"] in payload_api:
-                        payload_api[sensor["name"]] = (
-                            round(value, 1)
-                            if isinstance(value, (int, float))
-                            else int(value)
+                if self.update_requested:
+                    try:
+                        print("Menjalankan git pull origin master...")
+                        result = subprocess.run(
+                            ["git", "pull", "origin", "master"],
+                            capture_output=True,
+                            text=True,
                         )
+                        print(result.stdout)
+                        if result.returncode == 0:
+                            print("Git pull berhasil")
+                            # Hentikan camera thread sebelum restart
+                            if hasattr(self, "camera_thread"):
+                                self.camera_thread.stop()
+                            subprocess.run(["sudo", "reboot"], check=True)
+                            print("Service modbus berhasil direstart")
+                            break
+                        else:
+                            print("Git pull gagal:", result.stderr)
+                    except Exception as e:
+                        print("Error saat update:", e)
+                    finally:
+                        self.update_requested = False
+
+                # Jika CAMERA_ONLY, skip pembacaan sensor
+                if CAMERA_MODE == "CAMERA_ONLY":
+                    time.sleep(5)
+                    continue
+
+                # Lanjutkan dengan pembacaan sensor untuk mode lainnya
+                payload_mqtt = {
+                    "timestamp": time.time(),
+                    "timestamp_humanize": datetime.now(TZ).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+                    "device_location_id": DEVICE_LOCATION_ID,
+                    "sensors": [],
+                    "version": VERSION,
+                }
+
+                payload_api = {
+                    "device_location_id": DEVICE_LOCATION_ID,
+                    "ph": 0.0,
+                    "tds": 0.0,
+                    "tss": 0.0,
+                    "debit": 0.0,
+                    "rainfall": 0.0,
+                    "rainfall_daily": 0.0,
+                    "water_height": 0.0,
+                    "temperature": 0.0,
+                    "humidity": 0.0,
+                    "wind_direction": 0.0,
+                    "wind_speed": 0.0,
+                    "solar_radiation": 0.0,
+                    "evaporation": 0.0,
+                    "dissolve_oxygen": 0.0,
+                    "velocity": 0.0,
+                    "water_volume": 0.0,
+                }
+
+                value_details = {}
+
+                for device in self.config["devices"]:
+                    port = device["port"]
+                    for sensor in device["sensors"]:
+                        value = None
+                        if device["type"] == "modbus":
+                            if sensor["type"] == "4-20mA":
+                                value = self.modbusampere.read_analog(sensor, port)
+                            elif sensor["type"] == "digital_in":
+                                if self.rain_thread and sensor["name"] == "rainfall":
+                                    value_details = {
+                                        "realtime": self.rain_thread.rainfall_realtime,
+                                        "daily": self.rain_thread.rainfall_daily,
+                                        "hourly": self.rain_thread.rainfall_hourly,
+                                        "total": self.rain_thread.rainfall_total,
+                                        "unit": "mm",
+                                    }
+                                    value = self.rain_thread.rainfall_hourly
+                                else:
+                                    value = self.modbusampere.read_digital_inputs(
+                                        sensor, port
+                                    )
+                        elif (
+                            device["type"] == "direct_rs485"
+                            and device["name"] == "rs_rad"
+                        ):
+                            value = self.flowmeter.read_sensor_data(sensor, port)
+
+                        sensor_data = {}
 
                         if self.rain_thread and sensor["name"] == "rainfall":
-                            payload_api["rainfall_daily"] = (
-                                round(self.rain_thread.rainfall_daily, 1)
-                                if isinstance(
-                                    self.rain_thread.rainfall_daily, (int, float)
-                                )
-                                else int(self.rain_thread.rainfall_daily)
+                            print("kena di rainfall")
+                            sensor_data = {
+                                sensor["name"]: {
+                                    "sensor_type": sensor["type"],
+                                    "unit": sensor.get("conversion", {}).get(
+                                        "unit", ""
+                                    ),
+                                    "value": round(value_details["realtime"], 1)
+                                    if value_details["realtime"] is not None
+                                    else "ERROR",
+                                    "status": "OK" if value is not None else "error",
+                                    "values": value_details,
+                                }
+                            }
+
+                        else:
+                            sensor_data = {
+                                sensor["name"]: {
+                                    "sensor_type": sensor["type"],
+                                    "unit": sensor.get("conversion", {}).get(
+                                        "unit", ""
+                                    ),
+                                    "value": round(value, 1)
+                                    if value is not None
+                                    else "ERROR",
+                                    "status": "OK" if value is not None else "error",
+                                    "value_details": value_details,
+                                }
+                            }
+
+                        payload_mqtt["sensors"].append(sensor_data)
+
+                        if value is not None and sensor["name"] in payload_api:
+                            payload_api[sensor["name"]] = (
+                                round(value, 1)
+                                if isinstance(value, (int, float))
+                                else int(value)
                             )
 
-            print(payload_mqtt)
+                            if self.rain_thread and sensor["name"] == "rainfall":
+                                payload_api["rainfall_daily"] = (
+                                    round(self.rain_thread.rainfall_daily, 1)
+                                    if isinstance(
+                                        self.rain_thread.rainfall_daily, (int, float)
+                                    )
+                                    else int(self.rain_thread.rainfall_daily)
+                                )
 
-            topic = self.config["mqtt"]["base_topic"]
-            self.mqtt_client.publish(
-                topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]
-            )
+                print(payload_mqtt)
 
-            # Kirim ke API jika ada perintah report
-            if self.report_requested:
-                self.send_telemetry(payload_api)
-                self.report_requested = False
+                topic = self.config["mqtt"]["base_topic"]
+                self.mqtt_client.publish(
+                    topic, json.dumps(payload_mqtt), qos=self.config["mqtt"]["qos"]
+                )
 
-            time.sleep(5)
+                # Kirim ke API jika ada perintah report
+                if self.report_requested:
+                    self.send_telemetry(payload_api)
+                    self.report_requested = False
 
-        print("Restart requested, keluar loop")
-        subprocess.run(["sudo", "reboot"], check=True)
+                time.sleep(5)
+
+        except KeyboardInterrupt:
+            print("🛑 Received interrupt, shutting down...")
+        except Exception as e:
+            print(f"❌ Error in main loop: {e}")
+        finally:
+            print("🧹 Cleaning up...")
+            # Hentikan semua thread
+            if hasattr(self, "camera_thread"):
+                self.camera_thread.stop()
+            if hasattr(self, "rain_thread") and self.rain_thread:
+                self.rain_thread.stop()
+            print("✅ Cleanup completed")
+
+        if self.restart_requested:
+            print("🔁 Restart requested, keluar loop")
+            # Hentikan semua thread sebelum restart
+            if hasattr(self, "camera_thread"):
+                self.camera_thread.stop()
+            if hasattr(self, "rain_thread") and self.rain_thread:
+                self.rain_thread.stop()
+            subprocess.run(["sudo", "reboot"], check=True)
 
 
 if __name__ == "__main__":

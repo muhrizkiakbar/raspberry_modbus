@@ -4,6 +4,8 @@ import threading
 import time
 import requests
 import os
+import json
+import paho.mqtt.client as mqtt
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -11,10 +13,12 @@ TZ = ZoneInfo("Asia/Makassar")
 
 
 class CameraStreamThread(threading.Thread):
-    def __init__(self, device_location_id, api_key):
+    def __init__(self, device_location_id, api_key, mqtt_client, mqtt_config):
         super().__init__()
         self.device_location_id = device_location_id
         self.api_key = api_key
+        self.mqtt_client = mqtt_client
+        self.mqtt_config = mqtt_config
         self.stream_process = None
         self.is_streaming = False
         self.stream_start_time = None
@@ -22,6 +26,105 @@ class CameraStreamThread(threading.Thread):
         self.lock = threading.Lock()
         self.daemon = True
         self._stop_event = threading.Event()
+
+        # Setup MQTT topics
+        self.command_topic = f"{mqtt_config['base_topic']}/camera/command"
+        self.status_topic = f"{mqtt_config['base_topic']}/camera"
+
+        # Setup MQTT callbacks
+        self.mqtt_client.on_message = self._on_mqtt_message
+        self._setup_mqtt_subscriptions()
+
+    def _setup_mqtt_subscriptions(self):
+        """Setup MQTT subscriptions untuk camera"""
+        try:
+            self.mqtt_client.subscribe(self.command_topic, qos=1)
+            print(f"📡 Camera subscribed to: {self.command_topic}")
+        except Exception as e:
+            print(f"❌ Gagal subscribe MQTT camera: {e}")
+
+    def _on_mqtt_message(self, client, userdata, msg):
+        """Handle incoming MQTT messages untuk camera"""
+        try:
+            payload = msg.payload.decode().strip().lower()
+            print(f"📨 Camera command diterima: '{payload}' dari topic: {msg.topic}")
+
+            if msg.topic == self.command_topic:
+                if payload == "stream":
+                    self._handle_stream_command()
+                elif payload == "take":
+                    self._handle_take_photo_command()
+                elif payload == "stop":
+                    self._handle_stop_command()
+                else:
+                    print(f"⚠️ Command camera tidak dikenali: {payload}")
+
+        except Exception as e:
+            print(f"❌ Error handling MQTT message: {e}")
+
+    def _handle_stream_command(self):
+        """Handle command stream dari MQTT"""
+        print("🎥 Received stream command via MQTT")
+        if self.is_streaming:
+            print("⚠️ Streaming sudah aktif")
+            self._publish_camera_status("streaming_active")
+        else:
+            mode = self._get_camera_mode()
+            if self.start_stream(mode):
+                self._publish_camera_status("streaming_started")
+            else:
+                self._publish_camera_status("streaming_failed")
+
+    def _handle_take_photo_command(self):
+        """Handle command take photo dari MQTT"""
+        print("📸 Received take photo command via MQTT")
+        if self.take_photo():
+            self._publish_camera_status("photo_success")
+        else:
+            self._publish_camera_status("photo_failed")
+
+    def _handle_stop_command(self):
+        """Handle command stop dari MQTT"""
+        print("🛑 Received stop command via MQTT")
+        if self.stop_stream():
+            self._publish_camera_status("streaming_stopped")
+        else:
+            self._publish_camera_status("streaming_not_active")
+
+    def _publish_camera_status(self, status):
+        """Publish status camera ke MQTT"""
+        try:
+            payload = {
+                "device_location_id": self.device_location_id,
+                "camera": status,
+                "timestamp": datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S"),
+                "is_streaming": self.is_streaming,
+                "streaming_since": self.stream_start_time,
+            }
+
+            self.mqtt_client.publish(self.status_topic, json.dumps(payload), qos=1)
+            print(f"📤 Camera status published: {status}")
+
+        except Exception as e:
+            print(f"❌ Gagal publish camera status: {e}")
+
+    def _publish_heartbeat(self):
+        """Publish heartbeat status camera"""
+        try:
+            status = "streaming" if self.is_streaming else "online"
+            payload = {
+                "device_location_id": self.device_location_id,
+                "camera": status,
+                "timestamp": datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S"),
+                "streaming_time": time.time() - self.stream_start_time
+                if self.is_streaming
+                else 0,
+            }
+
+            self.mqtt_client.publish(self.status_topic, json.dumps(payload), qos=1)
+
+        except Exception as e:
+            print(f"❌ Gagal publish camera heartbeat: {e}")
 
     def start_stream(self, mode="day"):
         """Mulai streaming dengan mode siang/malam"""
@@ -119,11 +222,15 @@ class CameraStreamThread(threading.Thread):
                 self.is_streaming = True
                 self.stream_start_time = time.time()
                 print("✅ Streaming berhasil dimulai")
+
+                # Publish status
+                self._publish_camera_status("streaming_started")
                 return True
 
             except Exception as e:
                 print(f"❌ Error mulai streaming: {e}")
                 self._stop_stream_process()
+                self._publish_camera_status("streaming_failed")
                 return False
 
     def _stop_stream_process(self):
@@ -162,11 +269,17 @@ class CameraStreamThread(threading.Thread):
                 print("🛑 Menghentikan streaming...")
                 self._stop_stream_process()
                 print("✅ Streaming dihentikan")
+                self._publish_camera_status("streaming_stopped")
                 return True
             return False
 
+    def _get_camera_mode(self):
+        """Tentukan mode kamera berdasarkan waktu"""
+        current_hour = datetime.now(TZ).hour
+        return "night" if 18 <= current_hour or current_hour < 6 else "day"
+
     def take_photo(self):
-        """Ambil foto dengan resolusi tinggi 1080p dan kirim ke API"""
+        """Ambil foto dengan resolusi 1080p dan preset siang/malam"""
         with self.lock:
             # Hentikan streaming jika sedang berjalan
             was_streaming = self.is_streaming
@@ -175,13 +288,16 @@ class CameraStreamThread(threading.Thread):
                 time.sleep(2)  # Beri waktu untuk cleanup
 
             try:
-                # Buat nama file dengan timestamp
+                # Tentukan mode
+                mode = self._get_camera_mode()
                 timestamp = datetime.now(TZ).strftime("%Y%m%d_%H%M%S")
                 photo_filename = f"/tmp/photo_{self.device_location_id}_{timestamp}.jpg"
 
-                print(f"📸 Mengambil foto dengan resolusi 1080p: {photo_filename}")
+                print(
+                    f"📸 Mengambil foto mode {mode} dengan resolusi 1080p: {photo_filename}"
+                )
 
-                # Ambil foto dengan resolusi 1080p dan setting kualitas tinggi
+                # Base command untuk resolusi 1080p
                 photo_command = [
                     "libcamera-jpeg",
                     "-o",
@@ -191,17 +307,15 @@ class CameraStreamThread(threading.Thread):
                     "--height",
                     "1080",  # Tinggi 1080 pixel
                     "--quality",
-                    "95",  # Kualitas lebih tinggi (95%)
-                    "--sharpness",
-                    "1.5",  # Sharpness ditingkatkan
+                    "95",  # Kualitas tinggi
                     "--timeout",
                     "5000",  # Timeout 5 detik
-                    "--nopreview",  # Nonaktifkan preview untuk performa
+                    "--nopreview",  # Nonaktifkan preview
                 ]
 
-                # Untuk mode malam, tambahkan setting tambahan
-                current_hour = datetime.now(TZ).hour
-                if 18 <= current_hour or current_hour < 6:
+                # Tambahkan preset berdasarkan mode
+                if mode == "night":
+                    # PRESET MALAM - Hitam Putih untuk OV5647 dengan IR Cut
                     photo_command.extend(
                         [
                             "--awb",
@@ -217,29 +331,45 @@ class CameraStreamThread(threading.Thread):
                         ]
                     )
                 else:
+                    # PRESET SIANG - Untuk foto
                     photo_command.extend(
                         [
                             "--awb",
-                            "auto",  # Auto white balance untuk siang
+                            "auto",
+                            "--brightness",
+                            "0.0",
+                            "--contrast",
+                            "1.0",
+                            "--saturation",
+                            "1.0",
+                            "--sharpness",
+                            "1.0",
+                            "--gain",
+                            "1.0",
+                            "--ev",
+                            "0.0",
                             "--metering",
-                            "centre",  # Centre weighted metering
+                            "centre",
+                            "--shutter",
+                            "1000000",
                         ]
                     )
 
-                print(f"🔧 Command foto: {' '.join(photo_command)}")
+                print(f"🔧 Command foto {mode}: {' '.join(photo_command)}")
 
                 result = subprocess.run(
                     photo_command, capture_output=True, text=True, timeout=30
                 )
 
                 if result.returncode != 0:
-                    print(f"❌ Error mengambil foto: {result.stderr}")
-                    # Fallback ke command sederhana jika gagal
-                    return self._take_photo_fallback(photo_filename, was_streaming)
+                    print(f"❌ Error mengambil foto {mode}: {result.stderr}")
+                    self._publish_camera_status("photo_failed")
+                    return False
 
                 if not os.path.exists(photo_filename):
                     print("❌ File foto tidak terbentuk")
-                    return self._take_photo_fallback(photo_filename, was_streaming)
+                    self._publish_camera_status("photo_failed")
+                    return False
 
                 # Cek ukuran file untuk memastikan foto berhasil
                 file_size = os.path.getsize(photo_filename)
@@ -247,135 +377,79 @@ class CameraStreamThread(threading.Thread):
                     print(
                         f"❌ File foto terlalu kecil ({file_size} bytes), kemungkinan gagal"
                     )
-                    return self._take_photo_fallback(photo_filename, was_streaming)
+                    self._publish_camera_status("photo_failed")
+                    return False
 
-                print(f"✅ Foto berhasil diambil, ukuran: {file_size} bytes")
+                print(f"✅ Foto {mode} berhasil diambil, ukuran: {file_size} bytes")
 
-                # Kirim foto ke API dengan parameter yang sesuai
-                print("📤 Mengirim foto ke API...")
-                with open(photo_filename, "rb") as photo_file:
-                    # Siapkan data sesuai requirement API
-                    data = {"device_location_id": self.device_location_id}
-                    files = {
-                        "photo": (
-                            f"photo_{self.device_location_id}_{timestamp}.jpg",
-                            photo_file,
-                            "image/jpeg",
-                        )
-                    }
-                    headers = {"X-API-KEY": self.api_key}
+                # Kirim foto ke API
+                success = self._send_photo_to_api(photo_filename, timestamp)
 
-                    response = requests.post(
-                        "https://telemetry-adaro.id/api/key/device_photo/store",
-                        data=data,
-                        files=files,
-                        headers=headers,
-                        verify=False,
-                        timeout=30,
-                    )
-
-                    if response.status_code == 200:
-                        print("✅ Foto berhasil dikirim ke API")
-                        success = True
-                    else:
-                        print(
-                            f"❌ Gagal kirim foto: {response.status_code} {response.text}"
-                        )
-                        success = False
-
-                # Hapus file temporary
-                try:
-                    os.remove(photo_filename)
-                    print("🗑️ File temporary dihapus")
-                except Exception as e:
-                    print(f"⚠️ Gagal hapus file temporary: {e}")
+                if success:
+                    self._publish_camera_status("photo_success")
+                else:
+                    self._publish_camera_status("photo_failed")
 
                 return success
 
             except subprocess.TimeoutExpired:
                 print("❌ Timeout mengambil foto")
+                self._publish_camera_status("photo_timeout")
                 return False
             except Exception as e:
                 print(f"❌ Error mengambil foto: {e}")
+                self._publish_camera_status("photo_error")
                 return False
             finally:
                 # Jika sebelumnya streaming, mulai kembali
                 if was_streaming:
                     time.sleep(1)
-                    # Tentukan mode berdasarkan waktu
-                    current_hour = datetime.now(TZ).hour
-                    mode = "night" if 18 <= current_hour or current_hour < 6 else "day"
+                    mode = self._get_camera_mode()
                     self.start_stream(mode)
 
-    def _take_photo_fallback(self, photo_filename, was_streaming):
-        """Fallback method jika pengambilan foto high-res gagal"""
+    def _send_photo_to_api(self, photo_filename, timestamp):
+        """Helper method untuk mengirim foto ke API"""
         try:
-            print("🔄 Mencoba fallback method dengan setting dasar...")
-
-            # Command fallback yang lebih sederhana
-            fallback_command = [
-                "libcamera-jpeg",
-                "-o",
-                photo_filename,
-                "--width",
-                "1920",
-                "--height",
-                "1080",
-                "--quality",
-                "90",
-                "--timeout",
-                "3000",
-            ]
-
-            result = subprocess.run(
-                fallback_command, capture_output=True, text=True, timeout=20
-            )
-
-            if result.returncode == 0 and os.path.exists(photo_filename):
-                file_size = os.path.getsize(photo_filename)
-                print(f"✅ Foto fallback berhasil, ukuran: {file_size} bytes")
-
-                # Kirim ke API
-                with open(photo_filename, "rb") as photo_file:
-                    data = {"device_location_id": self.device_location_id}
-                    files = {
-                        "photo": (
-                            os.path.basename(photo_filename),
-                            photo_file,
-                            "image/jpeg",
-                        )
-                    }
-                    headers = {"X-API-KEY": self.api_key}
-
-                    response = requests.post(
-                        "https://telemetry-adaro.id/api/key/device_photo/store",
-                        data=data,
-                        files=files,
-                        headers=headers,
-                        verify=False,
-                        timeout=30,
+            print("📤 Mengirim foto ke API...")
+            with open(photo_filename, "rb") as photo_file:
+                data = {"device_location_id": self.device_location_id}
+                files = {
+                    "photo": (
+                        f"photo_{self.device_location_id}_{timestamp}.jpg",
+                        photo_file,
+                        "image/jpeg",
                     )
+                }
+                headers = {"X-API-KEY": self.api_key}
 
-                    success = response.status_code == 200
-                    if success:
-                        print("✅ Foto fallback berhasil dikirim ke API")
-                    else:
-                        print(f"❌ Gagal kirim foto fallback: {response.status_code}")
+                response = requests.post(
+                    "https://telemetry-adaro.id/api/key/photo",
+                    data=data,
+                    files=files,
+                    headers=headers,
+                    verify=False,
+                    timeout=30,
+                )
 
-                # Cleanup
-                try:
-                    os.remove(photo_filename)
-                except:
-                    pass
-
-                return success
-            else:
-                print("❌ Fallback method juga gagal")
-                return False
+                if response.status_code == 200:
+                    print("✅ Foto berhasil dikirim ke API")
+                    return True
+                else:
+                    print(
+                        f"❌ Gagal kirim foto: {response.status_code} {response.text}"
+                    )
+                    return False
 
         except Exception as e:
-            print(f"❌ Error di fallback method: {e}")
+            print(f"❌ Error mengirim foto ke API: {e}")
             return False
+        finally:
+            # Hapus file temporary
+            try:
+                os.remove(photo_filename)
+                print("🗑️ File temporary dihapus")
+            except Exception as e:
+                print(f"⚠️ Gagal hapus file temporary: {e}")
 
     def check_timeout(self):
         """Cek apakah streaming sudah melebihi timeout"""
@@ -417,6 +491,9 @@ class CameraStreamThread(threading.Thread):
 
     def run(self):
         """Thread utama untuk monitoring timeout dan process health"""
+        last_heartbeat = 0
+        heartbeat_interval = 30  # 30 detik
+
         while not self._stop_event.is_set():
             try:
                 # Cek timeout
@@ -428,6 +505,13 @@ class CameraStreamThread(threading.Thread):
                         print("🔄 Process streaming tidak berjalan, reset status...")
                         self.is_streaming = False
                         self.stream_start_time = None
+                        self._publish_camera_status("streaming_crashed")
+
+                # Publish heartbeat setiap interval
+                current_time = time.time()
+                if current_time - last_heartbeat >= heartbeat_interval:
+                    self._publish_heartbeat()
+                    last_heartbeat = current_time
 
             except Exception as e:
                 print(f"⚠️ Error di camera monitoring thread: {e}")
@@ -438,3 +522,4 @@ class CameraStreamThread(threading.Thread):
         """Hentikan thread"""
         self._stop_event.set()
         self.stop_stream()
+        self._publish_camera_status("offline")

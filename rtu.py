@@ -36,7 +36,7 @@ SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
 
 CAMERA_MODE = str(os.getenv("CAMERA_MODE", "OFF"))
 
-VERSION = "1.0.17"
+VERSION = "1.1.1"
 
 
 class RTU:

@@ -347,12 +347,14 @@ class CameraStreamThread(threading.Thread):
                         "--height",
                         "1080",
                         "--timeout",
-                        "10000",  # 5 detik
+                        "10000",
                         "--nopreview",
                         "--quality",
                         "98",
                         "--awb",
                         "tungsten",
+                        "--immediate",  # ⬅️ PENTING: Capture langsung tanpa preview processing
+                        "--flush",
                     ]
 
                 else:  # day mode
@@ -365,10 +367,12 @@ class CameraStreamThread(threading.Thread):
                         "--height",
                         "1080",
                         "--timeout",
-                        "10000",  # 5 detik
+                        "2000",  # 5 detik
                         "--nopreview",
                         "--quality",
                         "98",
+                        "--immediate",  # ⬅️ PENTING: Capture langsung tanpa preview processing
+                        "--flush",
                     ]
 
                 print(f"🔧 Command foto {mode}: {' '.join(photo_command)}")

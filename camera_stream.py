@@ -359,15 +359,14 @@ class CameraStreamThread(threading.Thread):
                             "0.2",
                             "--contrast",
                             "0.9",
-                        ]
-                    )
-                else:  # day mode
-                    photo_command.extend(
-                        [
                             "--exposure",
+                            "normal",
+                            "--denoise",
                             "auto",
                         ]
                     )
+                else:  # day mode
+                    photo_command.extend([])
 
                 print(f"🔧 Command foto {mode}: {' '.join(photo_command)}")
 

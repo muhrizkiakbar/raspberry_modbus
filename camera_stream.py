@@ -324,6 +324,7 @@ class CameraStreamThread(threading.Thread):
 
             try:
                 # Tentukan mode
+                self._publish_camera_status("photo_requested")
                 mode = self._get_camera_mode()
                 timestamp = datetime.now(TZ).strftime("%Y%m%d_%H%M%S")
                 photo_filename = f"/tmp/photo_{self.device_location_id}_{timestamp}.jpg"
@@ -337,6 +338,10 @@ class CameraStreamThread(threading.Thread):
                     "libcamera-still",
                     "-o",
                     photo_filename,
+                    "--width",
+                    "2592",
+                    "--height",
+                    "1944",
                     "--timeout",
                     "5000",  # 5 detik
                     "--nopreview",

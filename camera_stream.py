@@ -343,7 +343,7 @@ class CameraStreamThread(threading.Thread):
                     "--height",
                     "1944",
                     "--timeout",
-                    "5000",  # 5 detik
+                    "10000",  # 5 detik
                     "--nopreview",
                     "--quality",
                     "98",

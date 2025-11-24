@@ -353,8 +353,6 @@ class CameraStreamThread(threading.Thread):
                 if mode == "night":
                     photo_command.extend(
                         [
-                            "--awb",
-                            "tungsten",
                             "--awb-gains",
                             "1.8,0.9",
                             "--saturation",

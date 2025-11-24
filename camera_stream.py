@@ -338,9 +338,9 @@ class CameraStreamThread(threading.Thread):
                     "-o",
                     photo_filename,
                     "--width",
-                    "1920",  # Lebar 1920 pixel
+                    "2592",
                     "--height",
-                    "1080",  # Tinggi 1080 pixel
+                    "1944",
                     "--quality",
                     "95",  # Kualitas tinggi
                     "--timeout",
@@ -353,10 +353,20 @@ class CameraStreamThread(threading.Thread):
                     # PRESET MALAM - Hitam Putih untuk OV5647 dengan IR Cut
                     photo_command.extend(
                         [
+                            "--awb",
+                            "off",
                             "--saturation",
-                            "0.1",  # Hitam putih
+                            "0.0",  # Full hitam putih
                             "--ev",
                             "0.0",
+                            "--shutter",
+                            "1000000",  # 1 detik
+                            "--gain",
+                            "8",  # Tingkatkan sensitivitas
+                            "--denoise",
+                            "cdn_fast",  # Kurangi noise
+                            "--contrast",
+                            "1.0",  # Optional, untuk detail
                         ]
                     )
                 else:

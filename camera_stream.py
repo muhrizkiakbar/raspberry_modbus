@@ -338,9 +338,9 @@ class CameraStreamThread(threading.Thread):
                     "-o",
                     photo_filename,
                     "--width",
-                    "2592",
+                    "1920",
                     "--height",
-                    "1944",
+                    "1080",
                     "--quality",
                     "95",  # Kualitas tinggi
                     "--timeout",

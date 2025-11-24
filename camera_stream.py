@@ -363,8 +363,6 @@ class CameraStreamThread(threading.Thread):
                             "1000000",  # 1 detik
                             "--gain",
                             "8",  # Tingkatkan sensitivitas
-                            "--denoise",
-                            "cdn_fast",  # Kurangi noise
                             "--contrast",
                             "1.0",  # Optional, untuk detail
                         ]

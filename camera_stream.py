@@ -337,22 +337,40 @@ class CameraStreamThread(threading.Thread):
                     "libcamera-still",
                     "-o",
                     photo_filename,
-                    "--width",
-                    "1920",
-                    "--height",
-                    "1080",
                     "--timeout",
                     "5000",  # 5 detik
                     "--nopreview",
                     "--quality",
-                    "95",
+                    "98",
                 ]
 
                 # Tambahkan preset berdasarkan mode
                 if mode == "night":
-                    photo_command.extend([])
+                    photo_command.extend(
+                        [
+                            "--exposure",
+                            "auto",
+                            "--awb",
+                            "auto",
+                            "--metering",
+                            "average",
+                            "--denoise",
+                            "auto",
+                        ]
+                    )
                 else:  # day mode
-                    photo_command.extend([])
+                    photo_command.extend(
+                        [
+                            "--exposure",
+                            "auto",
+                            "--awb",
+                            "auto",
+                            "--metering",
+                            "average",
+                            "--denoise",
+                            "auto",
+                        ]
+                    )
 
                 print(f"🔧 Command foto {mode}: {' '.join(photo_command)}")
 

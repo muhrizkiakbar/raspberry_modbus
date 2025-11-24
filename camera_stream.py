@@ -350,23 +350,9 @@ class CameraStreamThread(threading.Thread):
 
                 # Tambahkan preset berdasarkan mode
                 if mode == "night":
-                    photo_command.extend(
-                        [
-                            "--exposure",
-                            "auto",
-                            "--awb",
-                            "auto",
-                        ]
-                    )
+                    photo_command.extend([])
                 else:  # day mode
-                    photo_command.extend(
-                        [
-                            "--exposure",
-                            "auto",
-                            "--awb",
-                            "auto",
-                        ]
-                    )
+                    photo_command.extend([])
 
                 print(f"🔧 Command foto {mode}: {' '.join(photo_command)}")
 

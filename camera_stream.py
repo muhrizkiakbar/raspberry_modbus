@@ -349,9 +349,7 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--exposure",
-                            "auto",
-                            "--awb",
-                            "auto",
+                            "normal",
                             "--metering",
                             "average",
                             "--denoise",
@@ -362,8 +360,6 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--exposure",
-                            "auto",
-                            "--awb",
                             "auto",
                             "--metering",
                             "average",

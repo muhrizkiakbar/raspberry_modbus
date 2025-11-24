@@ -354,11 +354,15 @@ class CameraStreamThread(threading.Thread):
                     photo_command.extend(
                         [
                             "--awb",
-                            "custom",
+                            "incandescent",
                             "--awbgains",
-                            "1.4,1.4",
+                            "1.8,0.9",
+                            "--saturation",
+                            "0.0",  # Hitam putih
                             "--ev",
-                            "0.0",
+                            "-0.5",
+                            "--metering",
+                            "matrix",
                         ]
                     )
                 else:

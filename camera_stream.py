@@ -357,6 +357,8 @@ class CameraStreamThread(threading.Thread):
                             "tungsten",
                             "--exposure",
                             "normal",
+                            "--saturation",
+                            "0.0",
                         ]
                     )
                 else:  # day mode

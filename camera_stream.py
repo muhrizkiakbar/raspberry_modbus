@@ -360,9 +360,11 @@ class CameraStreamThread(threading.Thread):
                             "--saturation",
                             "0.0",  # Hitam putih
                             "--ev",
-                            "-0.5",
-                            "--metering",
-                            "matrix",
+                            "0.0",
+                            "--brightness",
+                            "0.2",
+                            "--contrast",
+                            "1.2",
                         ]
                     )
                 else:

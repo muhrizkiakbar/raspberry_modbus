@@ -390,7 +390,9 @@ class CameraStreamThread(threading.Thread):
 
                 if result.returncode != 0:
                     print(f"❌ Error mengambil foto {mode}: {result.stderr}")
-                    self._publish_camera_status("photo_failed_return_code")
+                    self._publish_camera_status(
+                        "photo_failed_return_code" + result.stderr
+                    )
                     return False
 
                 if not os.path.exists(photo_filename):

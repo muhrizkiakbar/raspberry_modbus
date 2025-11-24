@@ -351,8 +351,6 @@ class CameraStreamThread(threading.Thread):
                         "--nopreview",
                         "--quality",
                         "98",
-                        "--awb",
-                        "tungsten",
                         "--immediate",  # ⬅️ PENTING: Capture langsung tanpa preview processing
                         "--flush",
                     ]

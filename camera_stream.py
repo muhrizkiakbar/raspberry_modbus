@@ -314,7 +314,7 @@ class CameraStreamThread(threading.Thread):
         return "night" if 18 <= current_hour or current_hour < 6 else "day"
 
     def take_photo(self):
-        """Ambil foto dengan resolusi 1080p dan preset siang/malam"""
+        """Ambil foto dengan resolusi 1080p menggunakan libcamera-still"""
         with self.lock:
             # Hentikan streaming jika sedang berjalan
             was_streaming = self.is_streaming
@@ -329,50 +329,42 @@ class CameraStreamThread(threading.Thread):
                 photo_filename = f"/tmp/photo_{self.device_location_id}_{timestamp}.jpg"
 
                 print(
-                    f"📸 Mengambil foto mode {mode} dengan resolusi 1080p: {photo_filename}"
+                    f"📸 Mengambil foto mode {mode} dengan libcamera-still: {photo_filename}"
                 )
 
-                # Base command untuk resolusi 1080p
+                # Base command untuk libcamera-still
                 photo_command = [
-                    "libcamera-jpeg",
+                    "libcamera-still",
                     "-o",
                     photo_filename,
                     "--width",
                     "1920",
                     "--height",
                     "1080",
-                    "--quality",
-                    "95",  # Kualitas tinggi
                     "--timeout",
-                    "5000",  # Timeout 5 detik
-                    "--nopreview",  # Nonaktifkan preview
+                    "5000",  # 5 detik
+                    "--nopreview",
+                    "--quality",
+                    "95",
                 ]
 
                 # Tambahkan preset berdasarkan mode
                 if mode == "night":
-                    # PRESET MALAM - Hitam Putih untuk OV5647 dengan IR Cut
                     photo_command.extend(
                         [
-                            "--saturation",
-                            "0.0",  # Full hitam putih
-                            "--ev",
-                            "0.0",
-                            "--shutter",
-                            "1000000",  # 1 detik
-                            "--gain",
-                            "8",  # Tingkatkan sensitivitas
+                            "--exposure",
+                            "auto",
+                            "--awb",
+                            "auto",
                         ]
                     )
-                else:
-                    # PRESET SIANG - Untuk foto
+                else:  # day mode
                     photo_command.extend(
                         [
+                            "--exposure",
+                            "auto",
                             "--awb",
-                            "custom",
-                            "--awbgains",
-                            "1.4,1.4",
-                            "--ev",
-                            "0.0",
+                            "auto",
                         ]
                     )
 
@@ -394,9 +386,8 @@ class CameraStreamThread(threading.Thread):
                     self._publish_camera_status("photo_failed_os_path_exist")
                     return False
 
-                # Cek ukuran file untuk memastikan foto berhasil
                 file_size = os.path.getsize(photo_filename)
-                if file_size < 1024:  # Jika file < 1KB, kemungkinan gagal
+                if file_size < 1024:
                     print(
                         f"❌ File foto terlalu kecil ({file_size} bytes), kemungkinan gagal"
                     )
@@ -405,7 +396,6 @@ class CameraStreamThread(threading.Thread):
 
                 print(f"✅ Foto {mode} berhasil diambil, ukuran: {file_size} bytes")
 
-                # Kirim foto ke API
                 success = self._send_photo_to_api(photo_filename, timestamp)
 
                 if success:

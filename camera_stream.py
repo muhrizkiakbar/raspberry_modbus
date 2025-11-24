@@ -114,7 +114,7 @@ class CameraStreamThread(threading.Thread):
         if self.take_photo():
             self._publish_camera_status("photo_success")
         else:
-            self._publish_camera_status("photo_failed")
+            self._publish_camera_status("photo_failed_take_photo_failed")
 
     def _handle_stop_command(self):
         """Handle command stop dari MQTT"""
@@ -390,12 +390,12 @@ class CameraStreamThread(threading.Thread):
 
                 if result.returncode != 0:
                     print(f"❌ Error mengambil foto {mode}: {result.stderr}")
-                    self._publish_camera_status("photo_failed")
+                    self._publish_camera_status("photo_failed_return_code")
                     return False
 
                 if not os.path.exists(photo_filename):
                     print("❌ File foto tidak terbentuk")
-                    self._publish_camera_status("photo_failed")
+                    self._publish_camera_status("photo_failed_os_path_exist")
                     return False
 
                 # Cek ukuran file untuk memastikan foto berhasil
@@ -404,7 +404,7 @@ class CameraStreamThread(threading.Thread):
                     print(
                         f"❌ File foto terlalu kecil ({file_size} bytes), kemungkinan gagal"
                     )
-                    self._publish_camera_status("photo_failed")
+                    self._publish_camera_status("photo_failed_failed_take_photo")
                     return False
 
                 print(f"✅ Foto {mode} berhasil diambil, ukuran: {file_size} bytes")
@@ -415,7 +415,7 @@ class CameraStreamThread(threading.Thread):
                 if success:
                     self._publish_camera_status("photo_success")
                 else:
-                    self._publish_camera_status("photo_failed")
+                    self._publish_camera_status("photo_failed_send_post_api")
 
                 return success
 

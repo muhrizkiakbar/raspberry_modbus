@@ -361,8 +361,6 @@ class CameraStreamThread(threading.Thread):
                             "1000000",  # 1 detik
                             "--gain",
                             "8",  # Tingkatkan sensitivitas
-                            "--contrast",
-                            "1.0",  # Optional, untuk detail
                         ]
                     )
                 else:

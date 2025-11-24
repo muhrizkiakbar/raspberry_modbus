@@ -335,7 +335,7 @@ class CameraStreamThread(threading.Thread):
 
                 # Base command untuk libcamera-still
                 photo_command = [
-                    "libcamera-jpeg",
+                    "libcamera-still",
                     "-o",
                     photo_filename,
                     "--width",

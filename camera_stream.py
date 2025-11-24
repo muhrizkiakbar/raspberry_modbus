@@ -356,7 +356,9 @@ class CameraStreamThread(threading.Thread):
                             "--awb-gains",
                             "1.8,0.9",
                             "--saturation",
-                            "0.1",
+                            "0.2",
+                            "--contrast",
+                            "0.9",
                         ]
                     )
                 else:  # day mode

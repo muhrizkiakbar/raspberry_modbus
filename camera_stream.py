@@ -355,10 +355,10 @@ class CameraStreamThread(threading.Thread):
                         [
                             "--awb",
                             "tungsten",
-                            "--exposure",
-                            "normal",
+                            "--awb-gains",
+                            "1.8,0.9",
                             "--saturation",
-                            "0.0",
+                            "0.1",
                         ]
                     )
                 else:  # day mode

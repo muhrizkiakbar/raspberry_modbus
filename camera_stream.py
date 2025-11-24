@@ -334,31 +334,42 @@ class CameraStreamThread(threading.Thread):
                 )
 
                 # Base command untuk libcamera-still
-                photo_command = [
-                    "libcamera-still",
-                    "-o",
-                    photo_filename,
-                    "--width",
-                    "1920",
-                    "--height",
-                    "1080",
-                    "--timeout",
-                    "10000",  # 5 detik
-                    "--nopreview",
-                    "--quality",
-                    "98",
-                ]
+                photo_command = []
 
                 # Tambahkan preset berdasarkan mode
                 if mode == "night":
-                    photo_command.extend(
-                        [
-                            "--awb",
-                            "tungsten",
-                        ]
-                    )
+                    photo_command = [
+                        "libcamera-still",
+                        "-o",
+                        photo_filename,
+                        "--width",
+                        "1920",
+                        "--height",
+                        "1080",
+                        "--timeout",
+                        "10000",  # 5 detik
+                        "--nopreview",
+                        "--quality",
+                        "98",
+                        "--awb",
+                        "tungsten",
+                    ]
+
                 else:  # day mode
-                    photo_command.extend([])
+                    photo_command = [
+                        "libcamera-still",
+                        "-o",
+                        photo_filename,
+                        "--width",
+                        "1920",
+                        "--height",
+                        "1080",
+                        "--timeout",
+                        "10000",  # 5 detik
+                        "--nopreview",
+                        "--quality",
+                        "98",
+                    ]
 
                 print(f"🔧 Command foto {mode}: {' '.join(photo_command)}")
 

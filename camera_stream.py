@@ -353,10 +353,8 @@ class CameraStreamThread(threading.Thread):
                     # PRESET MALAM - Hitam Putih untuk OV5647 dengan IR Cut
                     photo_command.extend(
                         [
-                            "--awb",
-                            "incandescent",
                             "--saturation",
-                            "0.0",  # Hitam putih
+                            "0.1",  # Hitam putih
                             "--ev",
                             "0.0",
                         ]

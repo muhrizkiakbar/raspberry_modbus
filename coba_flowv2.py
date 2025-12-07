@@ -2,7 +2,7 @@ import minimalmodbus
 
 # Inisialisasi RS485 Modbus RTU
 instrument = minimalmodbus.Instrument("/dev/ttyUSB1", 1)
-instrument.serial.baudrate = 4800
+instrument.serial.baudrate = 9600
 instrument.serial.bytesize = 8
 instrument.serial.parity = "N"
 instrument.serial.stopbits = 1

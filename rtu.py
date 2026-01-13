@@ -36,7 +36,7 @@ SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
 
 CAMERA_MODE = str(os.getenv("CAMERA_MODE", "OFF"))
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 
 
 class RTU:
@@ -347,7 +347,7 @@ class RTU:
                     self.send_telemetry(payload_api)
                     self.report_requested = False
 
-                time.sleep(5)
+                time.sleep(60)
 
         except KeyboardInterrupt:
             print("🛑 Received interrupt, shutting down...")

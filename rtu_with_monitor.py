@@ -32,7 +32,7 @@ MQTT_PASSWORD = str(os.getenv("MQTT_PASSWORD", ""))
 RAINFALL_MM_PERPULSE = float(os.getenv("RAINFALL_MM_PERPULSE", 0.2))
 SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
 
-VERSION = "1.0.17"
+VERSION = "1.0.90"
 
 
 class RTU:
@@ -345,7 +345,7 @@ class RTU:
                 self.send_telemetry(payload_api)
                 self.report_requested = False
 
-            time.sleep(5)
+            time.sleep(60)
 
         print("Restart requested, keluar loop")
         subprocess.run(["sudo", "reboot"], check=True)

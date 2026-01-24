@@ -36,7 +36,7 @@ SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
 
 CAMERA_MODE = str(os.getenv("CAMERA_MODE", "OFF"))
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 
 
 class RTU:
@@ -372,6 +372,78 @@ class RTU:
             subprocess.run(["sudo", "reboot"], check=True)
 
 
+def sync_system_time():
+    """
+    Sinkronisasi waktu sistem Raspberry Pi.
+    Urutan:
+    1. systemd-timesyncd / timedatectl
+    2. ntpdate
+    3. HTTP Date header (fallback)
+    """
+    print("⏰ Sinkronisasi waktu sistem dimulai...")
+
+    # Pastikan timezone benar
+    try:
+        subprocess.run(
+            ["sudo", "timedatectl", "set-timezone", "Asia/Makassar"],
+            check=True,
+        )
+        print("🌏 Timezone diset ke Asia/Makassar")
+    except Exception as e:
+        print(f"⚠️ Gagal set timezone: {e}")
+
+    # Coba NTP via systemd
+    try:
+        subprocess.run(
+            ["sudo", "timedatectl", "set-ntp", "true"],
+            check=True,
+        )
+        time.sleep(2)
+        subprocess.run(["timedatectl", "status"], check=True)
+        print("✅ Sinkronisasi waktu via systemd-timesyncd berhasil")
+        return
+    except Exception:
+        print("⚠️ systemd-timesyncd gagal, coba ntpdate...")
+
+    # Fallback ntpdate
+    try:
+        subprocess.run(
+            ["sudo", "ntpdate", "-u", "pool.ntp.org"],
+            check=True,
+        )
+        print("✅ Sinkronisasi waktu via ntpdate berhasil")
+        return
+    except Exception:
+        print("⚠️ ntpdate gagal, coba HTTP Date header...")
+
+    # Fallback HTTP Date
+    try:
+        response = requests.head(
+            "https://telemetry-adaro.id",
+            timeout=5,
+            verify=False,
+        )
+        date_str = response.headers.get("Date")
+        if date_str:
+            dt = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").replace(
+                tzinfo=timezone.utc
+            )
+
+            local_dt = dt.astimezone(TZ)
+            formatted = local_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+            subprocess.run(
+                ["sudo", "date", "-s", formatted],
+                check=True,
+            )
+            print(f"✅ Sinkronisasi waktu via HTTP berhasil: {formatted}")
+        else:
+            print("❌ Header Date tidak ditemukan")
+    except Exception as e:
+        print(f"❌ Gagal sinkronisasi waktu total: {e}")
+
+
 if __name__ == "__main__":
+    sync_system_time()
     gateway = RTU(None)
     gateway.monitor_all_devices()

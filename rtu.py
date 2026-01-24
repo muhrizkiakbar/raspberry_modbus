@@ -347,7 +347,7 @@ class RTU:
                     self.send_telemetry(payload_api)
                     self.report_requested = False
 
-                time.sleep(60)
+                time.sleep(30)
 
         except KeyboardInterrupt:
             print("🛑 Received interrupt, shutting down...")

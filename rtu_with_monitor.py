@@ -345,7 +345,7 @@ class RTU:
                 self.send_telemetry(payload_api)
                 self.report_requested = False
 
-            time.sleep(60)
+            time.sleep(30)
 
         print("Restart requested, keluar loop")
         subprocess.run(["sudo", "reboot"], check=True)

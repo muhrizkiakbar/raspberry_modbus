@@ -536,7 +536,7 @@ class CameraStreamThread(threading.Thread):
             except Exception as e:
                 print(f"⚠️ Error di camera monitoring thread: {e}")
 
-            time.sleep(10)  # Cek setiap 10 detik
+            time.sleep(30)  # Cek setiap 10 detik
 
     def stop(self):
         """Hentikan thread"""

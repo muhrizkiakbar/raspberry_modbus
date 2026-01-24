@@ -339,42 +339,23 @@ class CameraStreamThread(threading.Thread):
                 # Tambahkan preset berdasarkan mode
                 if mode == "night":
                     # Mode default (pink)
-                    # photo_command = [
-                    #     "libcamera-still",
-                    #     "-o",
-                    #     photo_filename,
-                    #     "--width",
-                    #     "1920",
-                    #     "--height",
-                    #     "1080",
-                    #     "--timeout",
-                    #     "10000",
-                    #     "--nopreview",
-                    #     "--quality",
-                    #     "98",
-                    #     "--awb",
-                    #     "tungsten",
-                    #     "--immediate",  # ⬅️ PENTING: Capture langsung tanpa preview processing
-                    #     "--flush",
-                    # ]
                     photo_command = [
-                        "bash",
-                        "-c",
-                        (
-                            "libcamera-still "
-                            "--width 1920 --height 1080 "
-                            "--timeout 10000 "
-                            "--nopreview "
-                            "--awb auto "
-                            "--immediate "
-                            "--flush "
-                            "--encoding yuv420 -o - | "
-                            "ffmpeg -y "
-                            "-f rawvideo -pix_fmt yuv420p "
-                            "-s 1920x1080 -i - "
-                            "-vf extractplanes=y,eq=contrast=1.2:brightness=0.02 "
-                            f"{photo_filename}"
-                        ),
+                        "libcamera-still",
+                        "-o",
+                        photo_filename,
+                        "--width",
+                        "1920",
+                        "--height",
+                        "1080",
+                        "--timeout",
+                        "10000",
+                        "--nopreview",
+                        "--quality",
+                        "98",
+                        "--awb",
+                        "tungsten",
+                        "--immediate",  # ⬅️ PENTING: Capture langsung tanpa preview processing
+                        "--flush",
                     ]
 
                 else:  # day mode

@@ -291,13 +291,22 @@ class RTU:
                         }
 
                     else:
+                        # sensor_data = {
+                        #    sensor["name"]: {
+                        #        "sensor_type": sensor["type"],
+                        #        "unit": sensor.get("conversion", {}).get("unit", ""),
+                        #        "value": round(value, 1)
+                        #        if value is not None
+                        #        else "ERROR",
+                        #        "status": "OK" if value is not None else "error",
+                        #        "value_details": value_details,
+                        #    }
+                        # }
                         sensor_data = {
                             sensor["name"]: {
                                 "sensor_type": sensor["type"],
                                 "unit": sensor.get("conversion", {}).get("unit", ""),
-                                "value": round(value, 1)
-                                if value is not None
-                                else "ERROR",
+                                "value": value if value is not None else "ERROR",
                                 "status": "OK" if value is not None else "error",
                                 "value_details": value_details,
                             }

@@ -36,7 +36,7 @@ SSL_CERT_PATH = "/home/pi/raspberry_modbus/telemetry-adaro.id.crt"
 
 CAMERA_MODE = str(os.getenv("CAMERA_MODE", "OFF"))
 
-VERSION = "1.1.4"
+VERSION = "1.1.5"
 
 
 class RTU:
@@ -209,6 +209,13 @@ class RTU:
                             # Hentikan camera thread sebelum restart
                             if hasattr(self, "camera_thread"):
                                 self.camera_thread.stop()
+
+                            topic = self.config["mqtt"]["command_topic"]
+
+                            self.mqtt_client.publish(
+                                topic, "updated", qos="2", retain=True
+                            )
+
                             subprocess.run(["sudo", "reboot"], check=True)
                             print("Service modbus berhasil direstart")
                             break
@@ -365,6 +372,9 @@ class RTU:
         if self.restart_requested:
             print("🔁 Restart requested, keluar loop")
             # Hentikan semua thread sebelum restart
+            topic = self.config["mqtt"]["command_topic"]
+
+            self.mqtt_client.publish(topic, "restarted", qos="2", retain=True)
             if hasattr(self, "camera_thread"):
                 self.camera_thread.stop()
             if hasattr(self, "rain_thread") and self.rain_thread:
